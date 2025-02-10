@@ -16,4 +16,4 @@ about:
 
 ---
 
-About this blog
+This is Carly's CSCI 451 blog
