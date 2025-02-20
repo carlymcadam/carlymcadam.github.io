@@ -242,7 +242,20 @@ background-size: cover;
 <span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>X_train, y_train <span class="op">=</span> prepare_data(train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>In the above code, we processed the dataset to prepare it for analysis as follows: * Remove the unnecessary columns and NAs * Prepare the qualitative columns for analysis by encoding them as quantitative columns + Encode the species column - Each species is assigned a number + “One-hot encode” the boolean columns - The get_dummies function converts these columns to 0-1 instead of True/False</p>
+<p>In the above code, we processed the dataset to prepare it for analysis as follows: - Remove the unnecessary columns and NAs</p>
+<ul>
+<li>Prepare the qualitative columns for analysis by encoding them as quantitative columns
+<ul>
+<li>Encode the species column
+<ul>
+<li>Each species is assigned a number</li>
+</ul></li>
+<li>“One-hot encode” the boolean columns
+<ul>
+<li>The get_dummies function converts these columns to 0-1 instead of True/False</li>
+</ul></li>
+</ul></li>
+</ul>
 <div id="cell-8" class="cell" data-execution_count="103">
 <div class="cell-output cell-output-display" data-execution_count="103">
 <div>
