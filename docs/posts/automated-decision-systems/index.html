@@ -244,15 +244,13 @@ window.Quarto = {
 <section id="abstract" class="level3">
 <h3 class="anchored" data-anchor-id="abstract">Abstract</h3>
 <p>In this blog post we’ll be looking at data from a bank. We’ll start with some data exploration and visualization to get a better understanding of the features in the dataset. Our ultimate goal here is to create a decision-making system that will determine whether a prospective borrower should be offered a loan. We will use logistic regression to assign weights to different features in the dataset, which we will then use to give each prospective borrower a “score”. This score will be used to determine whether the borrower will prospective receive a loan based on a threshold that will optimize profits for the bank. After creating this decision-making system, we’ll test it out on a test dataset and do some exploration into who our system predicted would be able to repay their loans, and who it predicted wouldn’t.</p>
-<div id="cell-4" class="cell" data-execution_count="269">
+<div id="cell-4" class="cell" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in the data</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>url <span class="op">=</span> <span class="st">"https://raw.githubusercontent.com/PhilChodrow/ml-notes/main/data/credit-risk/train.csv"</span></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>df_train <span class="op">=</span> pd.read_csv(url)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-5" class="cell" data-execution_count="270">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># echo : false</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df_train.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="270">
+<div id="cell-5" class="cell" data-execution_count="3">
+<div class="cell-output cell-output-display" data-execution_count="3">
 <div>
 
 
@@ -360,40 +358,40 @@ window.Quarto = {
 <section id="exploring-the-data" class="level3">
 <h3 class="anchored" data-anchor-id="exploring-the-data">Exploring The Data</h3>
 <p>Let’s start with some visualizations to explore patterns in this dataset:</p>
-<div id="cell-loan-intent-employment" class="cell" data-execution_count="271">
+<div id="cell-loan-intent-employment" class="cell" data-execution_count="4">
 <details class="code-fold">
 <summary>Plotting Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter out rows with employment length greater than 25 years</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_train <span class="op">=</span> df_train[df_train[<span class="st">'person_emp_length'</span>] <span class="op">&lt;=</span> <span class="dv">25</span>]</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bucket the employment length into 5-year chunks</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>bins <span class="op">=</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">25</span> <span class="op">+</span> <span class="dv">5</span>, <span class="dv">5</span>)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> [<span class="st">"0 to 5 years"</span>, <span class="st">"5 to 10 years"</span>, <span class="st">"10 to 15 years"</span>, <span class="st">"15 to 20 years"</span>, <span class="st">"20 to 25 years"</span>]</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>df_train[<span class="st">'emp_length_bucket'</span>] <span class="op">=</span> pd.cut(</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    df_train[<span class="st">'person_emp_length'</span>],</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    bins<span class="op">=</span>bins,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    right<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    labels<span class="op">=</span>labels,</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    include_lowest<span class="op">=</span><span class="va">True</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a Seaborn plot using histplot with multiple="fill" for normalized (proportional) stacked bars</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>df_train,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    x<span class="op">=</span><span class="st">'emp_length_bucket'</span>,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    hue<span class="op">=</span><span class="st">'loan_intent'</span>,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    multiple<span class="op">=</span><span class="st">'fill'</span>,  <span class="co"># normalizes each bar to sum to 1 (proportions)</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    shrink<span class="op">=</span><span class="fl">0.8</span>, </span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    palette<span class="op">=</span><span class="st">"Set2"</span></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Loan Intent Proportions by Employment Length"</span>)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Employment Length"</span>)</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Proportion"</span>)</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>plt.xticks(rotation<span class="op">=</span><span class="dv">45</span>)</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter out rows with employment length greater than 25 years</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df_train <span class="op">=</span> df_train[df_train[<span class="st">'person_emp_length'</span>] <span class="op">&lt;=</span> <span class="dv">25</span>]</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bucket the employment length into 5-year chunks</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>bins <span class="op">=</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">25</span> <span class="op">+</span> <span class="dv">5</span>, <span class="dv">5</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> [<span class="st">"0 to 5 years"</span>, <span class="st">"5 to 10 years"</span>, <span class="st">"10 to 15 years"</span>, <span class="st">"15 to 20 years"</span>, <span class="st">"20 to 25 years"</span>]</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>df_train[<span class="st">'emp_length_bucket'</span>] <span class="op">=</span> pd.cut(</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    df_train[<span class="st">'person_emp_length'</span>],</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    bins<span class="op">=</span>bins,</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    right<span class="op">=</span><span class="va">True</span>,</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>    labels<span class="op">=</span>labels,</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>    include_lowest<span class="op">=</span><span class="va">True</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a Seaborn plot using histplot with multiple="fill" for normalized (proportional) stacked bars</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>df_train,</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>    x<span class="op">=</span><span class="st">'emp_length_bucket'</span>,</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>    hue<span class="op">=</span><span class="st">'loan_intent'</span>,</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>    multiple<span class="op">=</span><span class="st">'fill'</span>,  <span class="co"># normalizes each bar to sum to 1 (proportions)</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>    shrink<span class="op">=</span><span class="fl">0.8</span>, </span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>    palette<span class="op">=</span><span class="st">"Set2"</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Loan Intent Proportions by Employment Length"</span>)</span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Employment Length"</span>)</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Proportion"</span>)</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>plt.xticks(rotation<span class="op">=</span><span class="dv">45</span>)</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 <div class="cell-output cell-output-display">
 <div id="loan-intent-employment" class="quarto-figure quarto-figure-center anchored">
@@ -404,15 +402,15 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="interest-rate-home-ownership" class="cell" data-execution_count="272">
+<div id="interest-rate-home-ownership" class="cell" data-execution_count="5">
 <details class="code-fold">
 <summary>Plotting Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the distribution of interest rates of each of the home ownership statuses </span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sns.boxplot(data<span class="op">=</span>df_train, x<span class="op">=</span><span class="st">"person_home_ownership"</span>, y<span class="op">=</span><span class="st">"loan_int_rate"</span>, palette<span class="op">=</span><span class="st">"Set2"</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Home Ownership Status"</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Loan Interest Rate"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the distribution of interest rates of each of the home ownership statuses </span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>sns.boxplot(data<span class="op">=</span>df_train, x<span class="op">=</span><span class="st">"person_home_ownership"</span>, y<span class="op">=</span><span class="st">"loan_int_rate"</span>, palette<span class="op">=</span><span class="st">"Set2"</span>)</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Home Ownership Status"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Loan Interest Rate"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
-<div id="interest-rate-home-ownership-1" class="cell-output cell-output-display" data-execution_count="272">
+<div id="interest-rate-home-ownership-1" class="cell-output cell-output-display" data-execution_count="5">
 <pre><code>Text(0, 0.5, 'Loan Interest Rate')</code></pre>
 <p>Figure 2: Interest rate distribution by home ownership status</p>
 </div>
@@ -424,8 +422,8 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="cell-credit-history-mean-length" class="cell" data-execution_count="273">
-<div id="credit-history-mean-length" class="cell-output cell-output-display" data-execution_count="273">
+<div id="cell-credit-history-mean-length" class="cell" data-execution_count="6">
+<div id="credit-history-mean-length" class="cell-output cell-output-display" data-execution_count="6">
 <div>
 
 
@@ -483,34 +481,34 @@ window.Quarto = {
 <p>We can see that we should be able to get some information about whether a borrower will pay back a loan from some of these features.</p>
 <section id="prepping-the-data" class="level4">
 <h4 class="anchored" data-anchor-id="prepping-the-data">Prepping the Data</h4>
-<div id="cell-13" class="cell" data-execution_count="274">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Encode the qualitative variables quantitatively</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> preprocess(df):</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Function to preprocess the data</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    le_home <span class="op">=</span> LabelEncoder()</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"person_home_ownership"</span>] <span class="op">=</span> le_home.fit_transform(df[<span class="st">"person_home_ownership"</span>])</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    le_intent <span class="op">=</span> LabelEncoder()</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"loan_intent"</span>] <span class="op">=</span> le_intent.fit_transform(df[<span class="st">"loan_intent"</span>])</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    intent_mapping <span class="op">=</span> <span class="bu">dict</span>(<span class="bu">zip</span>(le_intent.transform(le_intent.classes_), le_intent.classes_))</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.get_dummies(df, columns<span class="op">=</span>[<span class="st">'cb_person_default_on_file'</span>], prefix<span class="op">=</span><span class="st">'default'</span>)</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df.dropna()</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Change the interest rate column to a percentage</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"loan_int_rate"</span>] <span class="op">=</span> df[<span class="st">"loan_int_rate"</span>]<span class="op">/</span><span class="dv">100</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Filter out columns with weird values</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df[(df[<span class="st">"person_age"</span>] <span class="op">&lt;</span> <span class="dv">100</span>) <span class="op">&amp;</span> (df[<span class="st">"person_income"</span>] <span class="op">&gt;</span> <span class="dv">1000</span>) <span class="op">&amp;</span>  (df[<span class="st">"loan_int_rate"</span>] <span class="op">&gt;</span> <span class="dv">0</span>)]</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Separate our the target variable</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> df[<span class="st">"loan_status"</span>]</span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df, y, intent_mapping</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>df_train_clean, y_train, intent_map <span class="op">=</span> preprocess(df_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-13" class="cell" data-execution_count="7">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Encode the qualitative variables quantitatively</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> preprocess(df):</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Function to preprocess the data</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>    le_home <span class="op">=</span> LabelEncoder()</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"person_home_ownership"</span>] <span class="op">=</span> le_home.fit_transform(df[<span class="st">"person_home_ownership"</span>])</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    le_intent <span class="op">=</span> LabelEncoder()</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"loan_intent"</span>] <span class="op">=</span> le_intent.fit_transform(df[<span class="st">"loan_intent"</span>])</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>    intent_mapping <span class="op">=</span> <span class="bu">dict</span>(<span class="bu">zip</span>(le_intent.transform(le_intent.classes_), le_intent.classes_))</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.get_dummies(df, columns<span class="op">=</span>[<span class="st">'cb_person_default_on_file'</span>], prefix<span class="op">=</span><span class="st">'default'</span>)</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df.dropna()</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Change the interest rate column to a percentage</span></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"loan_int_rate"</span>] <span class="op">=</span> df[<span class="st">"loan_int_rate"</span>]<span class="op">/</span><span class="dv">100</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>    <span class="co">#Filter out columns with weird values</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df[(df[<span class="st">"person_age"</span>] <span class="op">&lt;</span> <span class="dv">100</span>) <span class="op">&amp;</span> (df[<span class="st">"person_income"</span>] <span class="op">&gt;</span> <span class="dv">1000</span>) <span class="op">&amp;</span>  (df[<span class="st">"loan_int_rate"</span>] <span class="op">&gt;</span> <span class="dv">0</span>)]</span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Separate our the target variable</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> df[<span class="st">"loan_status"</span>]</span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df, y, intent_mapping</span>
+<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-27"><a href="#cb5-27" aria-hidden="true" tabindex="-1"></a>df_train_clean, y_train, intent_map <span class="op">=</span> preprocess(df_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>We will use this function prepare our datasets for analysis. We’re encoding the qualitative columns for home ownership and loan intent as integers, one-hot encoding the historical default true/false column as 0s and 1s, separating the target variable</p>
 </section>
@@ -521,35 +519,35 @@ window.Quarto = {
 <h4 class="anchored" data-anchor-id="choosing-features">Choosing Features</h4>
 <p>First, let’s figure out which features we want to use for the model. We’ll generate a few new features that we can use to better understand the relationships between our features: - Credit history ratio: <span class="math inline">\(\frac{\text{credit history length}}{\text{age}}\)</span> - Employment stability: <span class="math inline">\(\frac{\text{employment length}}{\text{age}}\)</span> - Income stability: <span class="math inline">\(\text{income}*\text{employment length}\)</span></p>
 <p>We’ll use cross validation to test a few combinations of features: 1. Employment stability, income, and percentage of income that the loan is 2. Loan intent, credit history ratio, home ownership status 3. income stability, loan interest rate, age</p>
-<div id="cell-18" class="cell" data-execution_count="275">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create new features </span></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> new_features(df):</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"credit_history_ratio"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"cb_person_cred_hist_length"</span>]<span class="op">/</span>df[<span class="st">"person_age"</span>],<span class="dv">2</span>)</span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"employment_stability"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"person_emp_length"</span>]<span class="op">/</span>df[<span class="st">"person_age"</span>], <span class="dv">2</span>)</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"income_stability"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"person_income"</span>]<span class="op">*</span>df[<span class="st">"person_emp_length"</span>],<span class="dv">2</span>)</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>df_train_clean <span class="op">=</span> new_features(df_train_clean)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-18" class="cell" data-execution_count="8">
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create new features </span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> new_features(df):</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"credit_history_ratio"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"cb_person_cred_hist_length"</span>]<span class="op">/</span>df[<span class="st">"person_age"</span>],<span class="dv">2</span>)</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"employment_stability"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"person_emp_length"</span>]<span class="op">/</span>df[<span class="st">"person_age"</span>], <span class="dv">2</span>)</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"income_stability"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"person_income"</span>]<span class="op">*</span>df[<span class="st">"person_emp_length"</span>],<span class="dv">2</span>)</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>df_train_clean <span class="op">=</span> new_features(df_train_clean)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-19" class="cell" data-execution_count="276">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define three different sets of features</span></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>feature_sets <span class="op">=</span> {</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 1"</span>: [<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>],</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 2"</span>: [<span class="st">"loan_intent"</span>, <span class="st">"credit_history_ratio"</span>, <span class="st">"person_home_ownership"</span>],</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 3"</span>: [<span class="st">"income_stability"</span>, <span class="st">"loan_int_rate"</span>, <span class="st">"person_age"</span>]</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LogisticRegression()</span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate each feature set</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> {}</span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> set_name, features <span class="kw">in</span> feature_sets.items():</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a>    X_train <span class="op">=</span> df_train_clean[features]</span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a>    X_train <span class="op">=</span> StandardScaler().fit_transform(X_train)  <span class="co"># Standardize features </span></span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>    scores <span class="op">=</span> cross_val_score(model, X_train, y_train, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">'accuracy'</span>)</span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>    mean_accuracy <span class="op">=</span> np.mean(scores)</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>    results[set_name] <span class="op">=</span> mean_accuracy</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>set_name<span class="sc">}</span><span class="ss">: Mean Accuracy = </span><span class="sc">{</span>mean_accuracy<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-19" class="cell" data-execution_count="9">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Define three different sets of features</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>feature_sets <span class="op">=</span> {</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 1"</span>: [<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>],</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 2"</span>: [<span class="st">"loan_intent"</span>, <span class="st">"credit_history_ratio"</span>, <span class="st">"person_home_ownership"</span>],</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 3"</span>: [<span class="st">"income_stability"</span>, <span class="st">"loan_int_rate"</span>, <span class="st">"person_age"</span>]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LogisticRegression()</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate each feature set</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> {}</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> set_name, features <span class="kw">in</span> feature_sets.items():</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>    X_train <span class="op">=</span> df_train_clean[features]</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>    X_train <span class="op">=</span> StandardScaler().fit_transform(X_train)  <span class="co"># Standardize features </span></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>    scores <span class="op">=</span> cross_val_score(model, X_train, y_train, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">'accuracy'</span>)</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>    mean_accuracy <span class="op">=</span> np.mean(scores)</span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>    results[set_name] <span class="op">=</span> mean_accuracy</span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>set_name<span class="sc">}</span><span class="ss">: Mean Accuracy = </span><span class="sc">{</span>mean_accuracy<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Set 1: Mean Accuracy = 0.8246
 Set 2: Mean Accuracy = 0.7850
@@ -560,14 +558,14 @@ Set 3: Mean Accuracy = 0.8095</code></pre>
 <section id="estimating-weights" class="level4">
 <h4 class="anchored" data-anchor-id="estimating-weights">Estimating weights</h4>
 <p>After fitting an LR to each of the feature sets and using cross validation to test how accurate the models are, we can see that our first set of features, which includes employment stability, income, and percentage of income that the loan is has the highest average accuracy. Now, we’ll fit an LR model to these features to obtain our vector of weights that we’ll use in our scoring function.</p>
-<div id="cell-22" class="cell" data-execution_count="277">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>weights_model <span class="op">=</span> LogisticRegression()</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> df_train_clean[feature_sets[<span class="st">"Set 1"</span>]]</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> StandardScaler().fit_transform(X_train)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>weights_model.fit(X_train, y_train)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> feature, coef <span class="kw">in</span> <span class="bu">zip</span>(feature_sets[<span class="st">"Set 1"</span>], weights_model.coef_[<span class="dv">0</span>]):</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>feature<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>coef<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-22" class="cell" data-execution_count="10">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>weights_model <span class="op">=</span> LogisticRegression()</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> df_train_clean[feature_sets[<span class="st">"Set 1"</span>]]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> StandardScaler().fit_transform(X_train)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>weights_model.fit(X_train, y_train)</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> feature, coef <span class="kw">in</span> <span class="bu">zip</span>(feature_sets[<span class="st">"Set 1"</span>], weights_model.coef_[<span class="dv">0</span>]):</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>feature<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>coef<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>employment_stability: -0.1482
 person_income: -0.4953
@@ -585,73 +583,73 @@ loan_percent_income: 0.7925</code></pre>
 <p><span class="math inline">\(x_1\)</span> = employment_stability</p>
 <p><span class="math inline">\(x_2\)</span> = person_income</p>
 <p><span class="math inline">\(x_3\)</span> = loan_percent_income</p>
-<div id="cell-26" class="cell" data-execution_count="278">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score_dataframe(df):</span>
+<div id="cell-26" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score_dataframe(df):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the score for each borrower using the weights </span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co">    determined by the logistic regression</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="co">    inputs:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="co">    df: Pandas DataFrame with all features used to generate weights</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="co">    and loan status, amount, and interest rate for profit calculations</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    df_scored <span class="op">=</span> df.copy()</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    df_scored[[<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>]] <span class="op">=</span> StandardScaler().fit_transform(df_scored[[<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>]])</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    df_scored[<span class="st">"score"</span>] <span class="op">=</span>  <span class="bu">round</span>(<span class="op">-</span><span class="fl">0.1486</span> <span class="op">*</span> df_scored[<span class="st">"employment_stability"</span>] <span class="op">-</span> <span class="fl">0.6252</span> <span class="op">*</span> df_scored[<span class="st">"person_income"</span>] <span class="op">+</span> <span class="fl">0.7925</span> <span class="op">*</span> df_scored[<span class="st">"loan_percent_income"</span>],<span class="dv">2</span>)</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df_scored</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-27" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_profit(threshold, df):</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the score for each borrower using the weights </span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">    determined by the logistic regression</span></span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co">    inputs:</span></span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co">    df: Pandas DataFrame with all features used to generate weights</span></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">    and loan status, amount, and interest rate for profit calculations</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    df_scored <span class="op">=</span> df.copy()</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a>    df_scored[[<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>]] <span class="op">=</span> StandardScaler().fit_transform(df_scored[[<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>]])</span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    df_scored[<span class="st">"score"</span>] <span class="op">=</span>  <span class="bu">round</span>(<span class="op">-</span><span class="fl">0.1486</span> <span class="op">*</span> df_scored[<span class="st">"employment_stability"</span>] <span class="op">-</span> <span class="fl">0.6252</span> <span class="op">*</span> df_scored[<span class="st">"person_income"</span>] <span class="op">+</span> <span class="fl">0.7925</span> <span class="op">*</span> df_scored[<span class="st">"loan_percent_income"</span>],<span class="dv">2</span>)</span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df_scored</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the profit that the bank would have made if they had</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="co">    used the predictions determined by our score function</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="co">    and threshold</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a><span class="co">    inputs:</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="co">    threshold: integer value for score threshold </span></span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a><span class="co">    df: Pandas DataFrame with loan amount, interest rate, actual loan status, and score from </span></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="co">    scoring function</span></span>
+<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"pred_default"</span>] <span class="op">=</span> df[<span class="st">"score"</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: <span class="dv">1</span> <span class="cf">if</span> x <span class="op">&gt;</span> threshold <span class="cf">else</span> <span class="dv">0</span>)</span>
+<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate potential profit for repayment or defaulting </span></span>
+<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"repaid_profit"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"loan_amnt"</span>] <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">*</span> df[<span class="st">"loan_int_rate"</span>])<span class="op">**</span><span class="dv">10</span> <span class="op">-</span> df[<span class="st">"loan_amnt"</span>],<span class="dv">2</span>)</span>
+<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"defaulted_profit"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"loan_amnt"</span>] <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">*</span> df[<span class="st">"loan_int_rate"</span>])<span class="op">**</span><span class="dv">3</span> <span class="op">-</span> <span class="fl">1.7</span> <span class="op">*</span> df[<span class="st">"loan_amnt"</span>],<span class="dv">2</span>)</span>
+<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Profit based on actual loan status versus predicted status</span></span>
+<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Default to zero profit</span></span>
+<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">0</span>), <span class="st">"profit"</span>] <span class="op">=</span> df[<span class="st">"repaid_profit"</span>]  <span class="co"># Successful repayment</span></span>
+<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">0</span>), <span class="st">"profit"</span>] <span class="op">=</span> df[<span class="st">"defaulted_profit"</span>]  <span class="co"># Incorrectly predicted as good loan, default</span></span>
+<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">1</span>), <span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Correctly predicted as default, no profit</span></span>
+<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">1</span>), <span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Incorrectly predicted as default, no profit</span></span>
+<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(df[<span class="st">"profit"</span>]) <span class="op">/</span> <span class="bu">len</span>(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-27" class="cell" data-execution_count="279">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_profit(threshold, df):</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the profit that the bank would have made if they had</span></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">    used the predictions determined by our score function</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="co">    and threshold</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a><span class="co">    inputs:</span></span>
-<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a><span class="co">    threshold: integer value for score threshold </span></span>
-<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="co">    df: Pandas DataFrame with loan amount, interest rate, actual loan status, and score from </span></span>
-<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="co">    scoring function</span></span>
-<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"pred_default"</span>] <span class="op">=</span> df[<span class="st">"score"</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: <span class="dv">1</span> <span class="cf">if</span> x <span class="op">&gt;</span> threshold <span class="cf">else</span> <span class="dv">0</span>)</span>
-<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate potential profit for repayment or defaulting </span></span>
-<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"repaid_profit"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"loan_amnt"</span>] <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">*</span> df[<span class="st">"loan_int_rate"</span>])<span class="op">**</span><span class="dv">10</span> <span class="op">-</span> df[<span class="st">"loan_amnt"</span>],<span class="dv">2</span>)</span>
-<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"defaulted_profit"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"loan_amnt"</span>] <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">*</span> df[<span class="st">"loan_int_rate"</span>])<span class="op">**</span><span class="dv">3</span> <span class="op">-</span> <span class="fl">1.7</span> <span class="op">*</span> df[<span class="st">"loan_amnt"</span>],<span class="dv">2</span>)</span>
-<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Profit based on actual loan status versus predicted status</span></span>
-<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Default to zero profit</span></span>
-<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">0</span>), <span class="st">"profit"</span>] <span class="op">=</span> df[<span class="st">"repaid_profit"</span>]  <span class="co"># Successful repayment</span></span>
-<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">0</span>), <span class="st">"profit"</span>] <span class="op">=</span> df[<span class="st">"defaulted_profit"</span>]  <span class="co"># Incorrectly predicted as good loan, default</span></span>
-<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">1</span>), <span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Correctly predicted as default, no profit</span></span>
-<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">1</span>), <span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Incorrectly predicted as default, no profit</span></span>
-<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(df[<span class="st">"profit"</span>]) <span class="op">/</span> <span class="bu">len</span>(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div id="cell-28" class="cell" data-execution_count="280">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find optimal threshold</span></span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>scored_df <span class="op">=</span> score_dataframe(df_train_clean)</span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>thresholds <span class="op">=</span> np.arange(<span class="dv">0</span>,<span class="dv">3</span>,<span class="fl">0.05</span>)</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>profits <span class="op">=</span> [compute_profit(t, scored_df) <span class="cf">for</span> t <span class="kw">in</span> thresholds]</span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Find best threshold</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>optimal_threshold <span class="op">=</span> thresholds[np.argmax(profits)]</span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>optimal_profit <span class="op">=</span> <span class="bu">max</span>(profits)</span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal Threshold for Maximum Profit: </span><span class="sc">{</span>optimal_threshold<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Maximum profit per prospective borrower: </span><span class="sc">{</span><span class="bu">round</span>(optimal_profit,<span class="dv">2</span>)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot profit vs. threshold</span></span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>sns.set_style(<span class="st">"whitegrid"</span>)</span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>sns.set_palette(<span class="st">"Set2"</span>)</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">5</span>))</span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>plt.scatter(optimal_threshold, optimal_profit, color<span class="op">=</span>sns.color_palette(<span class="st">"Set2"</span>)[<span class="dv">1</span>], label<span class="op">=</span><span class="ss">f'Optimal t=</span><span class="sc">{</span>optimal_threshold<span class="sc">:.4f}</span><span class="ss">'</span>, zorder<span class="op">=</span><span class="dv">2</span>)</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>sns.lineplot(x<span class="op">=</span>thresholds, y<span class="op">=</span>profits, label<span class="op">=</span><span class="st">"Profit"</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Threshold"</span>)</span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Profit per borrower"</span>)</span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Threshold vs Profit"</span>)</span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-28" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find optimal threshold</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>scored_df <span class="op">=</span> score_dataframe(df_train_clean)</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>thresholds <span class="op">=</span> np.arange(<span class="dv">0</span>,<span class="dv">3</span>,<span class="fl">0.05</span>)</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>profits <span class="op">=</span> [compute_profit(t, scored_df) <span class="cf">for</span> t <span class="kw">in</span> thresholds]</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Find best threshold</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>optimal_threshold <span class="op">=</span> thresholds[np.argmax(profits)]</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>optimal_profit <span class="op">=</span> <span class="bu">max</span>(profits)</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal Threshold for Maximum Profit: </span><span class="sc">{</span>optimal_threshold<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Maximum profit per prospective borrower: </span><span class="sc">{</span><span class="bu">round</span>(optimal_profit,<span class="dv">2</span>)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot profit vs. threshold</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>sns.set_style(<span class="st">"whitegrid"</span>)</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>sns.set_palette(<span class="st">"Set2"</span>)</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">5</span>))</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>plt.scatter(optimal_threshold, optimal_profit, color<span class="op">=</span>sns.color_palette(<span class="st">"Set2"</span>)[<span class="dv">1</span>], label<span class="op">=</span><span class="ss">f'Optimal t=</span><span class="sc">{</span>optimal_threshold<span class="sc">:.4f}</span><span class="ss">'</span>, zorder<span class="op">=</span><span class="dv">2</span>)</span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>sns.lineplot(x<span class="op">=</span>thresholds, y<span class="op">=</span>profits, label<span class="op">=</span><span class="st">"Profit"</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Threshold"</span>)</span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Profit per borrower"</span>)</span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Threshold vs Profit"</span>)</span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Optimal Threshold for Maximum Profit: 1.1500
 Maximum profit per prospective borrower: 1316.4800</code></pre>
@@ -668,14 +666,14 @@ Maximum profit per prospective borrower: 1316.4800</code></pre>
 <section id="evaluating-from-the-banks-perspective" class="level3">
 <h3 class="anchored" data-anchor-id="evaluating-from-the-banks-perspective">Evaluating from the bank’s perspective</h3>
 <p>Now, we want to look at how this decision making system works on a test dataset. We’ll apply all of the functions we used on the training set with the test set, and see what the profit per borrower will look like using the threshold from above, 1.15.</p>
-<div id="cell-31" class="cell" data-execution_count="281">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>url <span class="op">=</span> <span class="st">"https://raw.githubusercontent.com/PhilChodrow/ml-notes/main/data/credit-risk/test.csv"</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> pd.read_csv(url)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>df_test, y_test, intent_map <span class="op">=</span> preprocess(df_test)</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> new_features(df_test)</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>scored_test_df <span class="op">=</span> score_dataframe(df_test)</span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"profit per prospective borrower:"</span>, <span class="bu">round</span>(compute_profit(<span class="fl">1.15</span>, scored_test_df),<span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-31" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>url <span class="op">=</span> <span class="st">"https://raw.githubusercontent.com/PhilChodrow/ml-notes/main/data/credit-risk/test.csv"</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> pd.read_csv(url)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>df_test, y_test, intent_map <span class="op">=</span> preprocess(df_test)</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> new_features(df_test)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>scored_test_df <span class="op">=</span> score_dataframe(df_test)</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"profit per prospective borrower:"</span>, <span class="bu">round</span>(compute_profit(<span class="fl">1.15</span>, scored_test_df),<span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>profit per prospective borrower: 1230.42</code></pre>
 </div>
@@ -692,12 +690,12 @@ Maximum profit per prospective borrower: 1316.4800</code></pre>
 </ol>
 <section id="question-1" class="level4">
 <h4 class="anchored" data-anchor-id="question-1">Question 1</h4>
-<div id="cell-37" class="cell" data-execution_count="283">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the borrower ages into 4 buckets and see </span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"age_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_age"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Young"</span>, <span class="st">"Middle-aged"</span>, <span class="st">"Older"</span>, <span class="st">"Senior"</span>])</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>age_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"age_group"</span>)[<span class="st">"pred_default"</span>].mean()</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>age_access</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="283">
+<div id="cell-37" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the borrower ages into 4 buckets and see </span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"age_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_age"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Young"</span>, <span class="st">"Middle-aged"</span>, <span class="st">"Older"</span>, <span class="st">"Senior"</span>])</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>age_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"age_group"</span>)[<span class="st">"pred_default"</span>].mean()</span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>age_access</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="16">
 <pre><code>age_group
 Young          0.171756
 Middle-aged    0.121554
@@ -710,21 +708,21 @@ Name: pred_default, dtype: float64</code></pre>
 </section>
 <section id="question-2" class="level4">
 <h4 class="anchored" data-anchor-id="question-2">Question 2</h4>
-<div id="cell-40" class="cell" data-execution_count="284">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate rejection rates and actual default rates for loan intent</span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>loan_intent_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"pred_default"</span>].mean()</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>loan_intent_default_rates <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"loan_status"</span>].mean()</span>
-<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>loan_intent_df <span class="op">=</span> pd.DataFrame({</span>
-<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Loan Intent (Decoded)"</span>: loan_intent_access.index.<span class="bu">map</span>(intent_map),</span>
-<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Rejection Rate"</span>: loan_intent_access.values,</span>
-<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Actual Default Rate"</span>: loan_intent_default_rates.values</span>
-<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-40" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate rejection rates and actual default rates for loan intent</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>loan_intent_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"pred_default"</span>].mean()</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>loan_intent_default_rates <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"loan_status"</span>].mean()</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>loan_intent_df <span class="op">=</span> pd.DataFrame({</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Loan Intent (Decoded)"</span>: loan_intent_access.index.<span class="bu">map</span>(intent_map),</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Rejection Rate"</span>: loan_intent_access.values,</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Actual Default Rate"</span>: loan_intent_default_rates.values</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-41" class="cell" data-execution_count="285">
-<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># echo: false</span></span>
-<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>loan_intent_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="285">
+<div id="cell-41" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># echo: false</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>loan_intent_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="18">
 <div>
 
 
@@ -784,13 +782,12 @@ Name: pred_default, dtype: float64</code></pre>
 </section>
 <section id="question-3" class="level4">
 <h4 class="anchored" data-anchor-id="question-3">Question 3</h4>
-<div id="cell-44" class="cell" data-execution_count="286">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"income_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_income"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Low"</span>, <span class="st">"Lower-middle"</span>, <span class="st">"Upper-middle"</span>, <span class="st">"High"</span>])</span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>income_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"income_group"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-44" class="cell" data-execution_count="19">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"income_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_income"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Low"</span>, <span class="st">"Lower-middle"</span>, <span class="st">"Upper-middle"</span>, <span class="st">"High"</span>])</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>income_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"income_group"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>::: {#cell-45 .cell 0=‘e’ 1=‘c’ 2=‘h’ 3=‘o’ 4=’ ’ 5=‘:’ 6=‘f’ 7=‘a’ 8=‘l’ 9=‘s’ 10=‘e’ execution_count=287}</p>
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>income_access</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="287">
+<div id="cell-45" class="cell" data-execution_count="20">
+<div class="cell-output cell-output-display" data-execution_count="20">
 <pre><code>income_group
 Low             0.342638
 Lower-middle    0.168044
@@ -798,7 +795,7 @@ Upper-middle    0.052274
 High            0.004370
 Name: pred_default, dtype: float64</code></pre>
 </div>
-<p>:::</p>
+</div>
 <p>Here, we are again looking at the loan rejection rates, this time by income group. It is clear that people with lower incomes are much more likely to be rejected using our decision making system (41% of the time), as opposed to high income people who are only rejected 0.8% of the time with our system.</p>
 </section>
 </section>
