@@ -846,7 +846,12 @@ loan_percent_income: 0.7925</code></pre>
 <span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    df_scored[<span class="st">"score"</span>] <span class="op">=</span>  <span class="bu">round</span>(<span class="op">-</span><span class="fl">0.1486</span> <span class="op">*</span> df_train[<span class="st">"employment_stability"</span>] <span class="op">-</span> <span class="fl">0.6252</span> <span class="op">*</span> df_scored[<span class="st">"person_income"</span>] <span class="op">+</span> <span class="fl">0.7925</span> <span class="op">*</span> df_scored[<span class="st">"loan_percent_income"</span>],<span class="dv">2</span>)</span>
 <span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df_scored</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-28" class="cell" data-execution_count="558">
+<p>Now, we will write a function that will compute the expected profit from each prospective borrower. If a prospective borrower has a score greater than the threshold, our system will predict that this borrower will default on their loan. So, we will not give them a loan, making their profit contribution 0. For users that we predict will not default on their loan, we have two cases. If they repay their loan, their profit will be determined by:</p>
+<p><span class="math inline">\(\text{profit = (loan amount)} * (1 + 0.25* \text{(loan interest rate)})^{10} - \text{(loan amount)}\)</span></p>
+<p>If the borrowed does not repay their loan, the bank will “profit” according to this equation:</p>
+<p><span class="math inline">\(\text{profit = (loan amount)} * (1 + 0.25* \text{(loan interest rate)})^{3} - 1.7 * \text{(loan amount)}\)</span></p>
+<p>This function will apply the profit equation to each borrower based on their predicted loan status, and we will calculate the expected profit per borrower by dividing by the number of prospective borrowers.</p>
+<div id="cell-29" class="cell" data-execution_count="558">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_profit(threshold, df):</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the profit that the bank would have made if they had</span></span>
@@ -876,7 +881,7 @@ loan_percent_income: 0.7925</code></pre>
 <span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(df[<span class="st">"profit"</span>]) <span class="op">/</span> <span class="bu">len</span>(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-29" class="cell" data-execution_count="569">
+<div id="cell-30" class="cell" data-execution_count="569">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find optimal threshold</span></span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>scored_df <span class="op">=</span> score_dataframe(df_train)</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>thresholds <span class="op">=</span> np.arange(<span class="fl">0.5</span>,<span class="dv">2</span>,<span class="fl">0.05</span>)</span>
@@ -917,7 +922,7 @@ Maximum Profit: 1325.2300</code></pre>
 <section id="evaluating-from-the-banks-perspective" class="level3">
 <h3 class="anchored" data-anchor-id="evaluating-from-the-banks-perspective">Evaluating from the bank’s perspective</h3>
 <p>Now, we want to look at how this decision making system works on a test dataset. We’ll apply all of the functions we used on the training set with the test set, and see what the profit per borrower will look like using the threshold from above, 0.95.</p>
-<div id="cell-32" class="cell" data-execution_count="561">
+<div id="cell-33" class="cell" data-execution_count="561">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>url <span class="op">=</span> <span class="st">"https://raw.githubusercontent.com/PhilChodrow/ml-notes/main/data/credit-risk/test.csv"</span></span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> pd.read_csv(url)</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>df_test, y_test, intent_map <span class="op">=</span> preprocess(df_test)</span>
@@ -941,12 +946,12 @@ Maximum Profit: 1325.2300</code></pre>
 </ol>
 <section id="question-1" class="level4">
 <h4 class="anchored" data-anchor-id="question-1">Question 1</h4>
-<div id="cell-38" class="cell">
+<div id="cell-39" class="cell">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the borrower ages into 4 buckets and see </span></span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"age_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_age"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Young"</span>, <span class="st">"Middle-aged"</span>, <span class="st">"Older"</span>, <span class="st">"Senior"</span>])</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>age_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"person_age"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div id="cell-39" class="cell">
+<div id="cell-40" class="cell">
 <div class="cell-output cell-output-display" data-execution_count="543">
 <pre><code>person_age
 Young          0.213508
@@ -960,7 +965,7 @@ Name: pred_default, dtype: float64</code></pre>
 </section>
 <section id="question-2" class="level4">
 <h4 class="anchored" data-anchor-id="question-2">Question 2</h4>
-<div id="cell-42" class="cell" data-execution_count="564">
+<div id="cell-43" class="cell" data-execution_count="564">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate rejection rates and actual default rates for loan intent</span></span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>loan_intent_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"pred_default"</span>].mean()</span>
@@ -1028,17 +1033,13 @@ Name: pred_default, dtype: float64</code></pre>
 </div>
 </div>
 </div>
-<div id="cell-43" class="cell">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="co"># echo: false</span></span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>loan_intent_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
 <p>We’re interested in the loans that are intended for medical uses. We can see that medical loans have the highest rate of rejection from our system (17% of medical loan requests are rejected), but they also have one of the highest rates of actual default (28%). Venture and business loans have much lower rates of rejection and their actual default rates are much closer to their rejection rates.</p>
 </section>
 <section id="question-3" class="level4">
 <h4 class="anchored" data-anchor-id="question-3">Question 3</h4>
-<div id="cell-46" class="cell" data-execution_count="566">
-<div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"income_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_income"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Low"</span>, <span class="st">"Lower-middle"</span>, <span class="st">"Upper-middle"</span>, <span class="st">"High"</span>])</span>
-<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>income_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"income_group"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div id="cell-47" class="cell" data-execution_count="566">
+<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"income_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_income"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Low"</span>, <span class="st">"Lower-middle"</span>, <span class="st">"Upper-middle"</span>, <span class="st">"High"</span>])</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>income_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"income_group"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="566">
 <pre><code>income_group
 Low             0.342638
@@ -1048,9 +1049,6 @@ High            0.005827
 Name: pred_default, dtype: float64</code></pre>
 </div>
 </div>
-<p>::: {#cell-47 .cell 0=‘e’ 1=‘c’ 2=‘h’ 3=‘o’ 4=’ ’ 5=‘:’ 6=‘f’ 7=‘a’ 8=‘l’ 9=‘s’ 10=‘e’}</p>
-<div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a>income_access</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>:::</p>
 <p>Here, we are again looking at the loan rejection rates, this time by income group. It is clear that people with lower incomes are much more likely to be rejected using our decision making system (34% of the time), as opposed to high income people who are only rejected 0.5% of the time with our system.</p>
 </section>
 </section>
