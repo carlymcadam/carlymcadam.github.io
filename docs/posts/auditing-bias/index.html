@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Carly McAdam">
-<meta name="dcterms.date" content="2025-02-13">
+<meta name="dcterms.date" content="2025-03-06">
 <meta name="description" content="Auditing for gender bias in income predictions">
 
 <title>Auditing Bias – My Awesome CSCI 0451 Blog</title>
@@ -125,35 +125,6 @@ background-size: cover;
 
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
-  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
-
-<script type="text/javascript">
-const typesetMath = (el) => {
-  if (window.MathJax) {
-    // MathJax Typeset
-    window.MathJax.typeset([el]);
-  } else if (window.katex) {
-    // KaTeX Render
-    var mathElements = el.getElementsByClassName("math");
-    var macros = [];
-    for (var i = 0; i < mathElements.length; i++) {
-      var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
-        window.katex.render(texText.data, mathElements[i], {
-          displayMode: mathElements[i].classList.contains('display'),
-          throwOnError: false,
-          macros: macros,
-          fleqn: false
-        });
-      }
-    }
-  }
-}
-window.Quarto = {
-  typesetMath
-};
-</script>
 
 <link rel="stylesheet" href="../../styles.css">
 </head>
@@ -222,7 +193,7 @@ window.Quarto = {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">February 13, 2025</p>
+        <p class="date">March 6, 2025</p>
       </div>
     </div>
     
@@ -243,8 +214,11 @@ window.Quarto = {
 
 <section id="abstract" class="level3">
 <h3 class="anchored" data-anchor-id="abstract">Abstract</h3>
-<p>In this blog post we’ll be looking at data from a bank. We’ll start with some data exploration and visualization to get a better understanding of the features in the dataset. Our ultimate goal here is to create a decision-making system that will determine whether a prospective borrower should be offered a loan. We will use logistic regression to assign weights to different features in the dataset, which we will then use to give each prospective borrower a “score”. This score will be used to determine whether the borrower will prospective receive a loan based on a threshold that will optimize profits for the bank. After creating this decision-making system, we’ll test it out on a test dataset and do some exploration into who our system predicted would be able to repay their loans, and who it predicted wouldn’t.</p>
-<div id="cell-4" class="cell" data-execution_count="3">
+<p>In this blog post we’ll be looking at census data and trying to predict whether a person will have an income over $50,000. We will not use a persons’ sex to predict their income. After training and implementing this algorithm, we will audit our model for gender bias. We will see that although the model doesn’t appear to perform too differently across male and female groups, there are some differences in the model performance, which we will explore further and discuss.</p>
+</section>
+<section id="pulling-and-prepping-the-data" class="level3">
+<h3 class="anchored" data-anchor-id="pulling-and-prepping-the-data">Pulling and Prepping the Data</h3>
+<div id="cell-5" class="cell" data-execution_count="26">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Read in the data</span></span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>STATE <span class="op">=</span> <span class="st">"CA"</span></span>
@@ -257,7 +231,7 @@ window.Quarto = {
 <span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>acs_data<span class="op">=</span>acs_data[[<span class="st">'PINCP'</span>, <span class="st">'AGEP'</span>, <span class="st">'SCHL'</span>, <span class="st">'MAR'</span>, <span class="st">'RELP'</span>, <span class="st">'DIS'</span>, <span class="st">'ESP'</span>, <span class="st">'CIT'</span>, <span class="st">'MIG'</span>, <span class="st">'MIL'</span>, <span class="st">'ANC'</span>, <span class="st">'NATIVITY'</span>, <span class="st">'DEAR'</span>, <span class="st">'DEYE'</span>, <span class="st">'DREM'</span>, <span class="st">'SEX'</span>, <span class="st">'RAC1P'</span>, <span class="st">'ESR'</span>]]</span>
 <span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>acs_data.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="3">
+<div class="cell-output cell-output-display" data-execution_count="26">
 <div>
 
 
@@ -397,10 +371,32 @@ window.Quarto = {
 </div>
 </div>
 </div>
-<div id="cell-5" class="cell" data-execution_count="548">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># echo : false</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>df_train.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="548">
+<div id="cell-6" class="cell" data-execution_count="27">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>features_to_use <span class="op">=</span> [<span class="st">'AGEP'</span>, <span class="st">'SCHL'</span>, <span class="st">'MAR'</span>, <span class="st">'RELP'</span>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>First, we’re reading in the census data. We’re also going to select some features that we’re going to use for our mode. We’ll be predicting income, so I chose some features that I think will be relevant – age, education level, marriage status, and relationship to “head of household”. Now, ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍we’ll ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍construct ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍a ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍BasicProblem that expresses that we are going to use the features we specified above to predict if a person’s income (“PINCP”) is over $50,000.</p>
+<div id="cell-8" class="cell" data-execution_count="28">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>IncomeProblem <span class="op">=</span> BasicProblem(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    features<span class="op">=</span>features_to_use,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    target<span class="op">=</span><span class="st">'PINCP'</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    target_transform<span class="op">=</span><span class="kw">lambda</span> x: x <span class="op">&gt;</span> <span class="dv">50000</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    group<span class="op">=</span><span class="st">'SEX'</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    preprocess<span class="op">=</span><span class="kw">lambda</span> x: x,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    postprocess<span class="op">=</span><span class="kw">lambda</span> x: np.nan_to_num(x, <span class="op">-</span><span class="dv">1</span>),</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>features, label, group <span class="op">=</span> IncomeProblem.df_to_numpy(acs_data)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="basic-descriptives" class="level3">
+<h3 class="anchored" data-anchor-id="basic-descriptives">Basic Descriptives</h3>
+<p>Before we get into creating our model, let’s get to know our dataset so that we understand the demographics that we’re working with. We’ll split our dataset into train and test sets.</p>
+<div id="cell-11" class="cell" data-execution_count="29">
+<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>X_train, X_test, y_train, y_test, group_train, group_test <span class="op">=</span> train_test_split(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    features, label, group, test_size<span class="op">=</span><span class="fl">0.2</span>, random_state<span class="op">=</span><span class="dv">0</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>This is what our dataset looks like. It has all of the features that we’re going to use to train our model, and it has a “group” column where 1 represents a male and 2 represents a female. The “label” column, which we will isolate as our target variable, is a boolean (true for a person with income &gt; $50,000, false otherwise).</p>
+<div id="cell-14" class="cell" data-execution_count="31">
+<div class="cell-output cell-output-display" data-execution_count="31">
 <div>
 
 
@@ -408,624 +404,59 @@ window.Quarto = {
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">person_age</th>
-<th data-quarto-table-cell-role="th">person_income</th>
-<th data-quarto-table-cell-role="th">person_home_ownership</th>
-<th data-quarto-table-cell-role="th">person_emp_length</th>
-<th data-quarto-table-cell-role="th">loan_intent</th>
-<th data-quarto-table-cell-role="th">loan_grade</th>
-<th data-quarto-table-cell-role="th">loan_amnt</th>
-<th data-quarto-table-cell-role="th">loan_int_rate</th>
-<th data-quarto-table-cell-role="th">loan_status</th>
-<th data-quarto-table-cell-role="th">loan_percent_income</th>
-<th data-quarto-table-cell-role="th">cb_person_default_on_file</th>
-<th data-quarto-table-cell-role="th">cb_person_cred_hist_length</th>
+<th data-quarto-table-cell-role="th">AGEP</th>
+<th data-quarto-table-cell-role="th">SCHL</th>
+<th data-quarto-table-cell-role="th">MAR</th>
+<th data-quarto-table-cell-role="th">RELP</th>
+<th data-quarto-table-cell-role="th">group</th>
+<th data-quarto-table-cell-role="th">label</th>
 </tr>
 </thead>
 <tbody>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">0</td>
-<td>25</td>
-<td>43200</td>
-<td>RENT</td>
-<td>NaN</td>
-<td>VENTURE</td>
-<td>B</td>
-<td>1200</td>
-<td>9.91</td>
-<td>0</td>
-<td>0.03</td>
-<td>N</td>
-<td>4</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">1</td>
-<td>27</td>
-<td>98000</td>
-<td>RENT</td>
-<td>3.0</td>
-<td>EDUCATION</td>
-<td>C</td>
-<td>11750</td>
-<td>13.47</td>
-<td>0</td>
-<td>0.12</td>
-<td>Y</td>
-<td>6</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">2</td>
-<td>22</td>
-<td>36996</td>
-<td>RENT</td>
-<td>5.0</td>
-<td>EDUCATION</td>
-<td>A</td>
-<td>10000</td>
-<td>7.51</td>
-<td>0</td>
-<td>0.27</td>
-<td>N</td>
-<td>4</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">3</td>
-<td>24</td>
-<td>26000</td>
-<td>RENT</td>
+<td>77.0</td>
+<td>16.0</td>
 <td>2.0</td>
-<td>MEDICAL</td>
-<td>C</td>
-<td>1325</td>
-<td>12.87</td>
-<td>1</td>
-<td>0.05</td>
-<td>N</td>
-<td>4</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">4</td>
-<td>29</td>
-<td>53004</td>
-<td>MORTGAGE</td>
-<td>2.0</td>
-<td>HOMEIMPROVEMENT</td>
-<td>A</td>
-<td>15000</td>
-<td>9.63</td>
-<td>0</td>
-<td>0.28</td>
-<td>N</td>
-<td>10</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-<td>...</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">26059</td>
-<td>36</td>
-<td>150000</td>
-<td>MORTGAGE</td>
-<td>8.0</td>
-<td>EDUCATION</td>
-<td>A</td>
-<td>3000</td>
-<td>7.29</td>
-<td>0</td>
-<td>0.02</td>
-<td>N</td>
-<td>17</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">26060</td>
-<td>23</td>
-<td>48000</td>
-<td>RENT</td>
-<td>1.0</td>
-<td>VENTURE</td>
-<td>A</td>
-<td>4325</td>
-<td>5.42</td>
-<td>0</td>
-<td>0.09</td>
-<td>N</td>
-<td>4</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">26061</td>
-<td>22</td>
-<td>60000</td>
-<td>RENT</td>
 <td>0.0</td>
-<td>MEDICAL</td>
-<td>B</td>
-<td>15000</td>
-<td>11.71</td>
-<td>0</td>
-<td>0.25</td>
-<td>N</td>
-<td>4</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">26062</td>
-<td>30</td>
-<td>144000</td>
-<td>MORTGAGE</td>
-<td>12.0</td>
-<td>PERSONAL</td>
-<td>C</td>
-<td>35000</td>
-<td>12.68</td>
-<td>0</td>
-<td>0.24</td>
-<td>N</td>
-<td>8</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">26063</td>
-<td>25</td>
-<td>60000</td>
-<td>RENT</td>
-<td>5.0</td>
-<td>EDUCATION</td>
-<td>A</td>
-<td>21450</td>
-<td>7.29</td>
-<td>1</td>
-<td>0.36</td>
-<td>N</td>
-<td>4</td>
-</tr>
-</tbody>
-</table>
-
-<p>26064 rows × 12 columns</p>
-</div>
-</div>
-</div>
-</section>
-<section id="exploring-the-data" class="level3">
-<h3 class="anchored" data-anchor-id="exploring-the-data">Exploring The Data</h3>
-<p>Let’s start with some visualizations to explore patterns in this dataset:</p>
-<div id="cell-loan-intent-employment" class="cell" data-execution_count="549">
-<details class="code-fold">
-<summary>Plotting Code</summary>
-<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Filter out rows with employment length greater than 25 years</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>df_train <span class="op">=</span> df_train[df_train[<span class="st">'person_emp_length'</span>] <span class="op">&lt;=</span> <span class="dv">25</span>]</span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Bucket the employment length into 5-year chunks</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>bins <span class="op">=</span> <span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">25</span> <span class="op">+</span> <span class="dv">5</span>, <span class="dv">5</span>)</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> [<span class="st">"0 to 5 years"</span>, <span class="st">"5 to 10 years"</span>, <span class="st">"10 to 15 years"</span>, <span class="st">"15 to 20 years"</span>, <span class="st">"20 to 25 years"</span>]</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>df_train[<span class="st">'emp_length_bucket'</span>] <span class="op">=</span> pd.cut(</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>    df_train[<span class="st">'person_emp_length'</span>],</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    bins<span class="op">=</span>bins,</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    right<span class="op">=</span><span class="va">True</span>,</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    labels<span class="op">=</span>labels,</span>
-<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    include_lowest<span class="op">=</span><span class="va">True</span></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a Seaborn plot using histplot with multiple="fill" for normalized (proportional) stacked bars</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
-<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>sns.histplot(</span>
-<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>df_train,</span>
-<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>    x<span class="op">=</span><span class="st">'emp_length_bucket'</span>,</span>
-<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    hue<span class="op">=</span><span class="st">'loan_intent'</span>,</span>
-<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    multiple<span class="op">=</span><span class="st">'fill'</span>,  <span class="co"># normalizes each bar to sum to 1 (proportions)</span></span>
-<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    shrink<span class="op">=</span><span class="fl">0.8</span>, </span>
-<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    palette<span class="op">=</span><span class="st">"Set2"</span></span>
-<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Loan Intent Proportions by Employment Length"</span>)</span>
-<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Employment Length"</span>)</span>
-<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Proportion"</span>)</span>
-<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>plt.xticks(rotation<span class="op">=</span><span class="dv">45</span>)</span>
-<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
-<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div class="cell-output cell-output-display">
-<div id="loan-intent-employment" class="quarto-figure quarto-figure-center anchored">
-<figure class="figure">
-<p><img src="index_files/figure-html/loan-intent-employment-output-1.png" class="img-fluid figure-img"></p>
-<figcaption>Figure 1: Loan intent by length of employment</figcaption>
-</figure>
-</div>
-</div>
-</div>
-<div id="interest-rate-home-ownership" class="cell" data-execution_count="550">
-<details class="code-fold">
-<summary>Plotting Code</summary>
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot the distribution of interest rates of each of the home ownership statuses </span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>sns.boxplot(data<span class="op">=</span>df_train, x<span class="op">=</span><span class="st">"person_home_ownership"</span>, y<span class="op">=</span><span class="st">"loan_int_rate"</span>, palette<span class="op">=</span><span class="st">"Set2"</span>)</span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Home Ownership Status"</span>)</span>
-<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Loan Interest Rate"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</details>
-<div id="interest-rate-home-ownership-1" class="cell-output cell-output-display" data-execution_count="550">
-<pre><code>Text(0, 0.5, 'Loan Interest Rate')</code></pre>
-<p>Figure 2: Interest rate distribution by home ownership status</p>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/interest-rate-home-ownership-output-2.png" id="interest-rate-home-ownership-2" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-<div id="cell-credit-history-mean-length" class="cell" data-execution_count="551">
-<div id="credit-history-mean-length" class="cell-output cell-output-display" data-execution_count="551">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">credit_history_length</th>
-</tr>
-<tr class="even">
-<th data-quarto-table-cell-role="th">loan_grade</th>
-<th data-quarto-table-cell-role="th"></th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">A</td>
-<td>5.7</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">B</td>
-<td>5.8</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">C</td>
-<td>5.9</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">D</td>
-<td>5.8</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">E</td>
-<td>5.8</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">F</td>
-<td>6.1</td>
-</tr>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">G</td>
-<td>6.6</td>
-</tr>
-</tbody>
-</table>
-
-</div>
-<p>Figure 3: mean credit history length by loan grade</p>
-</div>
-</div>
-<p>We’re looking here to understand some of the patterns in this dataset.</p>
-<p>First, in Figure 1, we can see that borrowers’ intentions for their loans change a bit as the length of their employment increases. Specifically, after 20 years of employment people stop borrowing to pay for education, which makes sense. People also start taking out more loans for venture and medical uses as their employment goes on. It looks like the proportion of loans that are intended to be used for home improvement, personal reasons, and debt consolidation remain fairly constant across length of employment.</p>
-<p>Moving on to Figure 2, we can see that borrowers with different home ownership statuses (renting, owning, mortgaging or other), have differences in the interest rate they might receive on their loan. Borrowers who rent their home seem more likely to have an interest rate of over 20%, and we can see that borrowers who own their homes rarely see interests rates over 20%. Borrowers who rent and mortgage their homes have more variability in the interest rates they might see, as well.</p>
-<p>Finally, we can see in Figure 3 that loan grades have differences in average length of credit of the borrower. It seems that borrowers with higher loan grades have longer credit histories, on average.</p>
-<p>We can see that we should be able to get some information about whether a borrower will pay back a loan from some of these features.</p>
-<section id="prepping-the-data" class="level4">
-<h4 class="anchored" data-anchor-id="prepping-the-data">Prepping the Data</h4>
-<div id="cell-13" class="cell" data-execution_count="552">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Encode the qualitative variables quantitatively</span></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> preprocess(df):</span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Function to preprocess the data</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    le_home <span class="op">=</span> LabelEncoder()</span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"person_home_ownership"</span>] <span class="op">=</span> le_home.fit_transform(df[<span class="st">"person_home_ownership"</span>])</span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    le_intent <span class="op">=</span> LabelEncoder()</span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"loan_intent"</span>] <span class="op">=</span> le_intent.fit_transform(df[<span class="st">"loan_intent"</span>])</span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>    intent_mapping <span class="op">=</span> <span class="bu">dict</span>(<span class="bu">zip</span>(le_intent.transform(le_intent.classes_), le_intent.classes_))</span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> pd.get_dummies(df, columns<span class="op">=</span>[<span class="st">'cb_person_default_on_file'</span>], prefix<span class="op">=</span><span class="st">'default'</span>)</span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df.dropna()</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Change the interest rate column to a percentage</span></span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"loan_int_rate"</span>] <span class="op">=</span> df[<span class="st">"loan_int_rate"</span>]<span class="op">/</span><span class="dv">100</span></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Separate our the target variable</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>    y <span class="op">=</span> df[<span class="st">"loan_status"</span>]</span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df, y, intent_mapping</span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>df_train, y_train, intent_map <span class="op">=</span> preprocess(df_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>We will use this function prepare our datasets for analysis. We’re encoding the qualitative columns for home ownership and loan intent as integers, one-hot encoding the historical default true/false column as 0s and 1s, separating the target variable</p>
-</section>
-</section>
-<section id="building-a-model" class="level3">
-<h3 class="anchored" data-anchor-id="building-a-model">Building A Model</h3>
-<section id="choosing-features" class="level4">
-<h4 class="anchored" data-anchor-id="choosing-features">Choosing Features</h4>
-<div id="cell-17" class="cell" data-execution_count="553">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df_train[<span class="st">'loan_amnt'</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="553">
-<pre><code>9627.86831527438</code></pre>
-</div>
-</div>
-<p>First, let’s figure out which features we want to use for the model. We’ll generate a few new features that we can use to better understand the relationships between our features: - Credit history ratio: <span class="math inline">\(\frac{\text{credit history length}}{\text{age}}\)</span> - Employment stability: <span class="math inline">\(\frac{\text{employment length}}{\text{age}}\)</span> - Income stability: <span class="math inline">\(\text{income}*\text{employment length}\)</span></p>
-<p>We’ll use cross validation to test a few combinations of features: 1. Employment stability, income, and percentage of income that the loan is 2. Loan intent, credit history ratio, home ownership status 3. income stability, loan interest rate, age</p>
-<div id="cell-19" class="cell" data-execution_count="554">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create new features </span></span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> new_features(df):</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"credit_history_ratio"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"cb_person_cred_hist_length"</span>]<span class="op">/</span>df_train[<span class="st">"person_age"</span>],<span class="dv">2</span>)</span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"employment_stability"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"person_emp_length"</span>]<span class="op">/</span>df_train[<span class="st">"person_age"</span>], <span class="dv">2</span>)</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"income_stability"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"person_income"</span>]<span class="op">*</span>df_train[<span class="st">"person_emp_length"</span>],<span class="dv">2</span>)</span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df</span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>df_train <span class="op">=</span> new_features(df_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div id="cell-20" class="cell" data-execution_count="555">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.model_selection <span class="im">import</span> cross_val_score</span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.linear_model <span class="im">import</span> LogisticRegression</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.preprocessing <span class="im">import</span> StandardScaler</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Define three different sets of features</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>feature_sets <span class="op">=</span> {</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 1"</span>: [<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>],</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 2"</span>: [<span class="st">"loan_intent"</span>, <span class="st">"credit_history_ratio"</span>, <span class="st">"person_home_ownership"</span>],</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Set 3"</span>: [<span class="st">"income_stability"</span>, <span class="st">"loan_int_rate"</span>, <span class="st">"person_age"</span>]</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> LogisticRegression()</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Evaluate each feature set</span></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> {}</span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> set_name, features <span class="kw">in</span> feature_sets.items():</span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>    X_train <span class="op">=</span> df_train[features]</span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>    X_train <span class="op">=</span> StandardScaler().fit_transform(X_train)  <span class="co"># Standardize features </span></span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>    scores <span class="op">=</span> cross_val_score(model, X_train, y_train, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">'accuracy'</span>)</span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>    mean_accuracy <span class="op">=</span> np.mean(scores)</span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>    results[set_name] <span class="op">=</span> mean_accuracy</span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>set_name<span class="sc">}</span><span class="ss">: Mean Accuracy = </span><span class="sc">{</span>mean_accuracy<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Set 1: Mean Accuracy = 0.8246
-Set 2: Mean Accuracy = 0.7850
-Set 3: Mean Accuracy = 0.8096</code></pre>
-</div>
-</div>
-</section>
-<section id="estimating-weights" class="level4">
-<h4 class="anchored" data-anchor-id="estimating-weights">Estimating weights</h4>
-<p>After fitting an LR to each of the feature sets and using cross validation to test how accurate the models are, we can see that our first set of features, which includes employment stability, income, and percentage of income that the loan is has the highest average accuracy. Now, we’ll fit an LR model to these features to obtain our vector of weights that we’ll use in our scoring function.</p>
-<div id="cell-23" class="cell" data-execution_count="556">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>weights_model <span class="op">=</span> LogisticRegression()</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> df_train[feature_sets[<span class="st">"Set 1"</span>]]</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>X_train <span class="op">=</span> StandardScaler().fit_transform(X_train)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>weights_model.fit(X_train, y_train)</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> feature, coef <span class="kw">in</span> <span class="bu">zip</span>(feature_sets[<span class="st">"Set 1"</span>], weights_model.coef_[<span class="dv">0</span>]):</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="sc">{</span>feature<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>coef<span class="sc">:.4f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>employment_stability: -0.1480
-person_income: -0.6256
-loan_percent_income: 0.7925</code></pre>
-</div>
-</div>
-<p>Now we can use these coefficients in our as the values in our weight vector when we create a scoring function, which we’ll do next.</p>
-</section>
-</section>
-<section id="creating-the-score-function" class="level3">
-<h3 class="anchored" data-anchor-id="creating-the-score-function">Creating the score function</h3>
-<p>Our next step is to give each borrower a score, using the features and weights that we decided on above. We’ll add a “score” column to the train set that has the result of our score function:</p>
-<p><span class="math inline">\(\text{score} = -0.1486 * x_1 - 0.6252 * x_2 + 0.7925 * x_3\)</span></p>
-<p>where</p>
-<p><span class="math inline">\(x_1\)</span> = employment_stability</p>
-<p><span class="math inline">\(x_2\)</span> = person_income</p>
-<p><span class="math inline">\(x_3\)</span> = loan_percent_income</p>
-<div id="cell-27" class="cell" data-execution_count="557">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> score_dataframe(df):</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the score for each borrower using the weights </span></span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="co">    determined by the logistic regression</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a><span class="co">    inputs:</span></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="co">    df: Pandas DataFrame with all features used to generate weights</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a><span class="co">    and loan status, amount, and interest rate for profit calculations</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    df_scored <span class="op">=</span> df</span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    df_scored[[<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>]] <span class="op">=</span> StandardScaler().fit_transform(df_scored[[<span class="st">"employment_stability"</span>, <span class="st">"person_income"</span>, <span class="st">"loan_percent_income"</span>]])</span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    df_scored[<span class="st">"score"</span>] <span class="op">=</span>  <span class="bu">round</span>(<span class="op">-</span><span class="fl">0.1486</span> <span class="op">*</span> df_train[<span class="st">"employment_stability"</span>] <span class="op">-</span> <span class="fl">0.6252</span> <span class="op">*</span> df_scored[<span class="st">"person_income"</span>] <span class="op">+</span> <span class="fl">0.7925</span> <span class="op">*</span> df_scored[<span class="st">"loan_percent_income"</span>],<span class="dv">2</span>)</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df_scored</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<p>Now, we will write a function that will compute the expected profit from each prospective borrower. If a prospective borrower has a score greater than the threshold, our system will predict that this borrower will default on their loan. So, we will not give them a loan, making their profit contribution 0. For users that we predict will not default on their loan, we have two cases. If they repay their loan, their profit will be determined by:</p>
-<p><span class="math inline">\(\text{profit = (loan amount)} * (1 + 0.25* \text{(loan interest rate)})^{10} - \text{(loan amount)}\)</span></p>
-<p>If the borrowed does not repay their loan, the bank will “profit” according to this equation:</p>
-<p><span class="math inline">\(\text{profit = (loan amount)} * (1 + 0.25* \text{(loan interest rate)})^{3} - 1.7 * \text{(loan amount)}\)</span></p>
-<p>This function will apply the profit equation to each borrower based on their predicted loan status, and we will calculate the expected profit per borrower by dividing by the number of prospective borrowers.</p>
-<div id="cell-29" class="cell" data-execution_count="558">
-<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_profit(threshold, df):</span>
-<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
-<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Compute the profit that the bank would have made if they had</span></span>
-<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">    used the predictions determined by our score function</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="co">    and threshold</span></span>
-<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co">    inputs:</span></span>
-<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="co">    threshold: integer value for score threshold </span></span>
-<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="co">    df: Pandas DataFrame with loan amount, interest rate, actual loan status, and score from </span></span>
-<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a><span class="co">    scoring function</span></span>
-<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
-<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"pred_default"</span>] <span class="op">=</span> df[<span class="st">"score"</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: <span class="dv">1</span> <span class="cf">if</span> x <span class="op">&gt;</span> threshold <span class="cf">else</span> <span class="dv">0</span>)</span>
-<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate potential profit for repayment or defaulting </span></span>
-<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"repaid_profit"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"loan_amnt"</span>] <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">*</span> df[<span class="st">"loan_int_rate"</span>])<span class="op">**</span><span class="dv">10</span> <span class="op">-</span> df[<span class="st">"loan_amnt"</span>],<span class="dv">2</span>)</span>
-<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"defaulted_profit"</span>] <span class="op">=</span> <span class="bu">round</span>(df[<span class="st">"loan_amnt"</span>] <span class="op">*</span> (<span class="dv">1</span> <span class="op">+</span> <span class="fl">0.25</span> <span class="op">*</span> df[<span class="st">"loan_int_rate"</span>])<span class="op">**</span><span class="dv">3</span> <span class="op">-</span> <span class="fl">1.7</span> <span class="op">*</span> df[<span class="st">"loan_amnt"</span>],<span class="dv">2</span>)</span>
-<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Profit based on actual loan status versus predicted status</span></span>
-<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    df[<span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Default to zero profit</span></span>
-<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">0</span>), <span class="st">"profit"</span>] <span class="op">=</span> df[<span class="st">"repaid_profit"</span>]  <span class="co"># Successful repayment</span></span>
-<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">0</span>), <span class="st">"profit"</span>] <span class="op">=</span> df[<span class="st">"defaulted_profit"</span>]  <span class="co"># Incorrectly predicted as good loan, default</span></span>
-<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">1</span>), <span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Correctly predicted as default, no profit</span></span>
-<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    df.loc[(df[<span class="st">"loan_status"</span>] <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (df[<span class="st">"pred_default"</span>] <span class="op">==</span> <span class="dv">1</span>), <span class="st">"profit"</span>] <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Incorrectly predicted as default, no profit</span></span>
-<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>    <span class="co"># The borrowers are only the people we predict will not default</span></span>
-<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a>    <span class="co"># borrowers = df.loc[(df["pred_default"] == 0)]</span></span>
-<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="bu">sum</span>(df[<span class="st">"profit"</span>]) <span class="op">/</span> <span class="bu">len</span>(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div id="cell-30" class="cell" data-execution_count="569">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Find optimal threshold</span></span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>scored_df <span class="op">=</span> score_dataframe(df_train)</span>
-<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>thresholds <span class="op">=</span> np.arange(<span class="fl">0.5</span>,<span class="dv">2</span>,<span class="fl">0.05</span>)</span>
-<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>profits <span class="op">=</span> [compute_profit(t, scored_df) <span class="cf">for</span> t <span class="kw">in</span> thresholds]</span>
-<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Find best threshold</span></span>
-<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>optimal_threshold <span class="op">=</span> thresholds[np.argmax(profits)]</span>
-<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>optimal_profit <span class="op">=</span> <span class="bu">max</span>(profits)</span>
-<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Optimal Threshold for Maximum Profit: </span><span class="sc">{</span>optimal_threshold<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb16-10"><a href="#cb16-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Maximum Profit: </span><span class="sc">{</span><span class="bu">round</span>(optimal_profit,<span class="dv">2</span>)<span class="sc">:.4f}</span><span class="ss">"</span>)</span>
-<span id="cb16-11"><a href="#cb16-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-12"><a href="#cb16-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-13"><a href="#cb16-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot profit vs. threshold</span></span>
-<span id="cb16-14"><a href="#cb16-14" aria-hidden="true" tabindex="-1"></a>sns.set_style(<span class="st">"whitegrid"</span>)</span>
-<span id="cb16-15"><a href="#cb16-15" aria-hidden="true" tabindex="-1"></a>sns.set_palette(<span class="st">"Set2"</span>)</span>
-<span id="cb16-16"><a href="#cb16-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb16-17"><a href="#cb16-17" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">8</span>, <span class="dv">5</span>))</span>
-<span id="cb16-18"><a href="#cb16-18" aria-hidden="true" tabindex="-1"></a>plt.scatter(optimal_threshold, optimal_profit, color<span class="op">=</span>sns.color_palette(<span class="st">"Set2"</span>)[<span class="dv">1</span>], label<span class="op">=</span><span class="ss">f'Optimal t=</span><span class="sc">{</span>optimal_threshold<span class="sc">:.4f}</span><span class="ss">'</span>, zorder<span class="op">=</span><span class="dv">2</span>)</span>
-<span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>sns.lineplot(x<span class="op">=</span>thresholds, y<span class="op">=</span>profits, label<span class="op">=</span><span class="st">"Profit"</span>, zorder<span class="op">=</span><span class="dv">1</span>)</span>
-<span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Threshold"</span>)</span>
-<span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Profit per borrower"</span>)</span>
-<span id="cb16-22"><a href="#cb16-22" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Threshold vs Profit"</span>)</span>
-<span id="cb16-23"><a href="#cb16-23" aria-hidden="true" tabindex="-1"></a>plt.legend()</span>
-<span id="cb16-24"><a href="#cb16-24" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>Optimal Threshold for Maximum Profit: 1.1000
-Maximum Profit: 1325.2300</code></pre>
-</div>
-<div class="cell-output cell-output-display">
-<div>
-<figure class="figure">
-<p><img src="index_files/figure-html/cell-15-output-2.png" class="img-fluid figure-img"></p>
-</figure>
-</div>
-</div>
-</div>
-</section>
-<section id="evaluating-from-the-banks-perspective" class="level3">
-<h3 class="anchored" data-anchor-id="evaluating-from-the-banks-perspective">Evaluating from the bank’s perspective</h3>
-<p>Now, we want to look at how this decision making system works on a test dataset. We’ll apply all of the functions we used on the training set with the test set, and see what the profit per borrower will look like using the threshold from above, 0.95.</p>
-<div id="cell-33" class="cell" data-execution_count="561">
-<div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>url <span class="op">=</span> <span class="st">"https://raw.githubusercontent.com/PhilChodrow/ml-notes/main/data/credit-risk/test.csv"</span></span>
-<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> pd.read_csv(url)</span>
-<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>df_test, y_test, intent_map <span class="op">=</span> preprocess(df_test)</span>
-<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>df_test <span class="op">=</span> new_features(df_test)</span>
-<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>scored_test_df <span class="op">=</span> score_dataframe(df_test)</span>
-<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="bu">round</span>(compute_profit(<span class="fl">0.95</span>, scored_test_df),<span class="dv">2</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>1140.1</code></pre>
-</div>
-</div>
-<p>It looks like we ended up with a fairly similar profit per borrower on the test set to what we got from the train set, $X per borrower on the test set and $X on the train set. From the bank’s perspective, this seems positive. If they are making, on average, $1146 per borrower, they would make around $6,000,000 off of this dataset of borrowers.</p>
-</section>
-<section id="evaluating-from-the-borrowers-perspective" class="level3">
-<h3 class="anchored" data-anchor-id="evaluating-from-the-borrowers-perspective">Evaluating from the borrower’s perspective</h3>
-<p>Now, let’s try to get a better understanding of who in the test dataset we are predicting is going to default on their loans, and who we are predicting is going to repay them. We’ll look at the following questions:</p>
-<ol type="1">
-<li>Is it more difficult for people in certain age groups to access credit under your proposed system?</li>
-<li>Is it more difficult for people to get loans in order to pay for medical expenses? How does this compare with the actual rate of default in that 3. group? What about people seeking loans for business ventures or education?</li>
-<li>How does a person’s income level impact the ease with which they can access credit under your decision system?</li>
-</ol>
-<section id="question-1" class="level4">
-<h4 class="anchored" data-anchor-id="question-1">Question 1</h4>
-<div id="cell-39" class="cell">
-<div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Split the borrower ages into 4 buckets and see </span></span>
-<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"age_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_age"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Young"</span>, <span class="st">"Middle-aged"</span>, <span class="st">"Older"</span>, <span class="st">"Senior"</span>])</span>
-<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>age_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"person_age"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</div>
-<div id="cell-40" class="cell">
-<div class="cell-output cell-output-display" data-execution_count="543">
-<pre><code>person_age
-Young          0.213508
-Middle-aged    0.153792
-Older          0.159735
-Senior         0.163636
-Name: pred_default, dtype: float64</code></pre>
-</div>
-</div>
-<p>These probabilities are the mean of the prediction column, so they tell us the rate at which a 1 is predicted in each of the age buckets using our decision making system. That is, they tell us the loan rejection rate for each age group. We can see that younger people and seniors are more likely to be rejected for a loan than middle aged people are.</p>
-</section>
-<section id="question-2" class="level4">
-<h4 class="anchored" data-anchor-id="question-2">Question 2</h4>
-<div id="cell-43" class="cell" data-execution_count="564">
-<div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate rejection rates and actual default rates for loan intent</span></span>
-<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>loan_intent_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"pred_default"</span>].mean()</span>
-<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>loan_intent_default_rates <span class="op">=</span> scored_test_df.groupby(<span class="st">"loan_intent"</span>)[<span class="st">"loan_status"</span>].mean()</span>
-<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>loan_intent_df <span class="op">=</span> pd.DataFrame({</span>
-<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Loan Intent (Decoded)"</span>: loan_intent_access.index.<span class="bu">map</span>(intent_map),</span>
-<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Rejection Rate"</span>: loan_intent_access.values,</span>
-<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Actual Default Rate"</span>: loan_intent_default_rates.values</span>
-<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>})</span>
-<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a>loan_intent_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="564">
-<div>
-
-
-<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
-<thead>
-<tr class="header">
-<th data-quarto-table-cell-role="th"></th>
-<th data-quarto-table-cell-role="th">Loan Intent (Decoded)</th>
-<th data-quarto-table-cell-role="th">Rejection Rate</th>
-<th data-quarto-table-cell-role="th">Actual Default Rate</th>
-</tr>
-</thead>
-<tbody>
-<tr class="odd">
-<td data-quarto-table-cell-role="th">0</td>
-<td>DEBTCONSOLIDATION</td>
-<td>0.159292</td>
-<td>0.287611</td>
+<td>2</td>
+<td>True</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">1</td>
-<td>EDUCATION</td>
-<td>0.162415</td>
-<td>0.167517</td>
+<td>29.0</td>
+<td>20.0</td>
+<td>5.0</td>
+<td>2.0</td>
+<td>1</td>
+<td>False</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">2</td>
-<td>HOMEIMPROVEMENT</td>
-<td>0.100649</td>
-<td>0.250000</td>
+<td>60.0</td>
+<td>21.0</td>
+<td>1.0</td>
+<td>0.0</td>
+<td>2</td>
+<td>False</td>
 </tr>
 <tr class="even">
 <td data-quarto-table-cell-role="th">3</td>
-<td>MEDICAL</td>
-<td>0.169618</td>
-<td>0.284250</td>
+<td>27.0</td>
+<td>19.0</td>
+<td>5.0</td>
+<td>13.0</td>
+<td>2</td>
+<td>False</td>
 </tr>
 <tr class="odd">
 <td data-quarto-table-cell-role="th">4</td>
-<td>PERSONAL</td>
-<td>0.159319</td>
-<td>0.220441</td>
-</tr>
-<tr class="even">
-<td data-quarto-table-cell-role="th">5</td>
-<td>VENTURE</td>
-<td>0.145228</td>
-<td>0.146266</td>
+<td>63.0</td>
+<td>23.0</td>
+<td>3.0</td>
+<td>0.0</td>
+<td>1</td>
+<td>True</td>
 </tr>
 </tbody>
 </table>
@@ -1033,27 +464,316 @@ Name: pred_default, dtype: float64</code></pre>
 </div>
 </div>
 </div>
-<p>We’re interested in the loans that are intended for medical uses. We can see that medical loans have the highest rate of rejection from our system (17% of medical loan requests are rejected), but they also have one of the highest rates of actual default (28%). Venture and business loans have much lower rates of rejection and their actual default rates are much closer to their rejection rates.</p>
-</section>
-<section id="question-3" class="level4">
-<h4 class="anchored" data-anchor-id="question-3">Question 3</h4>
-<div id="cell-47" class="cell" data-execution_count="566">
-<div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>scored_test_df[<span class="st">"income_group"</span>] <span class="op">=</span> pd.qcut(scored_test_df[<span class="st">"person_income"</span>], q<span class="op">=</span><span class="dv">4</span>, labels<span class="op">=</span>[<span class="st">"Low"</span>, <span class="st">"Lower-middle"</span>, <span class="st">"Upper-middle"</span>, <span class="st">"High"</span>])</span>
-<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>income_access <span class="op">=</span> scored_test_df.groupby(<span class="st">"income_group"</span>)[<span class="st">"pred_default"</span>].mean()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-display" data-execution_count="566">
-<pre><code>income_group
-Low             0.342638
-Lower-middle    0.178375
-Upper-middle    0.081466
-High            0.005827
-Name: pred_default, dtype: float64</code></pre>
+<p>Now, let’s get some information about the data:</p>
+<div id="cell-16" class="cell" data-execution_count="32">
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of individuals in the training set: 303053</code></pre>
 </div>
 </div>
-<p>Here, we are again looking at the loan rejection rates, this time by income group. It is clear that people with lower incomes are much more likely to be rejected using our decision making system (34% of the time), as opposed to high income people who are only rejected 0.5% of the time with our system.</p>
+<div id="cell-17" class="cell" data-execution_count="36">
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of individuals in the training set with income over $50,000: 73963</code></pre>
+</div>
+</div>
+<div id="cell-18" class="cell" data-execution_count="35">
+<div class="cell-output cell-output-stdout">
+<pre><code>Number of males in the training set: 149294
+Number of females in the training set: 153759</code></pre>
+</div>
+</div>
+<div id="cell-19" class="cell" data-execution_count="37">
+<div class="cell-output cell-output-stdout">
+<pre><code>Male proportion w/ income over $50,000: 0.3
+Female proportion w/ income over $50,000: 0.19</code></pre>
+</div>
+</div>
+<p>We can see that there are more females than males in the training set, although not by much. It’s almost evenly split. There are also about 10% more males than females have an income of over $50,000. It’s important to understand the breakdown in our dataset because if we’re looking for a model to perform well for both groups, we want there to be enough data in the training set for each group. We also want to be sure that we have people from each group with income above and below the threshold, so that the model can learn patterns about people in each group with each label. Now, let’s look at intersectional trends in the data by breaking out the income groups by sex and education level.</p>
+<div id="cell-21" class="cell" data-execution_count="12">
+<details class="code-fold">
+<summary>Plotting code</summary>
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute proportions of positive labels by both SEX and SCHL</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>intersectional_counts <span class="op">=</span> df.groupby([<span class="st">"group"</span>, <span class="st">"SCHL"</span>])[<span class="st">"label"</span>].mean().reset_index()</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Rename columns for clarity</span></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>intersectional_counts.columns <span class="op">=</span> [<span class="st">"Sex"</span>, <span class="st">"Education Level"</span>, <span class="st">"Proportion with Positive Label"</span>]</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a bar plot</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">12</span>, <span class="dv">6</span>))</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>sns.barplot(</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>intersectional_counts, </span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    x<span class="op">=</span><span class="st">"Education Level"</span>, </span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    y<span class="op">=</span><span class="st">"Proportion with Positive Label"</span>, </span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    hue<span class="op">=</span><span class="st">"Sex"</span></span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Labels and title</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"Education Level (SCHL)"</span>)</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"Proportion with Positive Label (e.g., Income &gt; $50k)"</span>)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Proportion of Positive Labels by Sex and Education Level"</span>)</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>plt.legend(title<span class="op">=</span><span class="st">"Sex"</span>)</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Rotate x-axis labels for better readability</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>plt.xticks(rotation<span class="op">=</span><span class="dv">45</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co"># Show plot</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-13-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Here, we can see that across all education levels, men are more likely to have an income over $50,000 than women are. We can also see that this gap seems to be exacerbated at lower education levels. There is a bigger gap between the proportion of men and proportion of women with income over $50,000 at 15-19 years of education than at the higher education levels of 21-24 years. This is an important example of intersectional trends, because we can see that the income disparity between men and women varies depending on education level.</p>
 </section>
+<section id="training-the-model" class="level3">
+<h3 class="anchored" data-anchor-id="training-the-model">Training the Model</h3>
+<p>Now that we understand our dataset, we’ll train a support vector machine model to predict if an individual’s income is over $50,000. An SVM model aims to find an optimal hyperplane in an N-dimensional space to separate data points into different classes. It is similar to a linear classification model, but it can be in multiple dimensions. The SVM algorithm maximizes the margin between the closest points of different classes. One of the parameters in an SVM model is the regularization term “C”, which is used to balance the misclassification penalties with maximization. If the value of “C” is higher, the model more strictly penalizes misclassifications. Before training our model, we will use cross-validation to find an optimal value of this “C” parameter.</p>
+<div id="cell-25" class="cell" data-execution_count="14">
+<details class="code-fold">
+<summary>Cross-val code</summary>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> make_pipeline(StandardScaler(), LinearSVC(dual<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>model.fit(X_train, y_train)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the pipeline</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>pipeline <span class="op">=</span> make_pipeline(StandardScaler(), LinearSVC(dual<span class="op">=</span><span class="va">False</span>, max_iter<span class="op">=</span><span class="dv">5000</span>))</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Define the hyperparameter grid for C</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>param_grid <span class="op">=</span> {<span class="st">'linearsvc__C'</span>: [<span class="fl">0.001</span>, <span class="fl">0.01</span>, <span class="fl">0.1</span>, <span class="dv">1</span>, <span class="dv">10</span>, <span class="dv">100</span>]}</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co"># Perform Grid Search with Cross-Validation</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>grid_search <span class="op">=</span> GridSearchCV(pipeline, param_grid, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">'accuracy'</span>, n_jobs<span class="op">=-</span><span class="dv">1</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>grid_search.fit(X_train, y_train)</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Get the best C value</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>best_C <span class="op">=</span> grid_search.best_params_[<span class="st">'linearsvc__C'</span>]</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Best C: </span><span class="sc">{</span>best_C<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Best model with optimal C</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>best_model <span class="op">=</span> grid_search.best_estimator_</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Best C: 0.001</code></pre>
+</div>
+</div>
+<p>Based on our cross-validation, the value of “C” that we should use is 0.001. Now, we’ll create and train our model using a pipeline. The pipeline is used to sequentially apply transformations – here, we are using StandardScaler() to standardize all of the features in the dataset.</p>
+<div id="cell-27" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>model <span class="op">=</span> make_pipeline(StandardScaler(), LinearSVC(C<span class="op">=</span><span class="fl">0.001</span>, dual<span class="op">=</span><span class="va">False</span>))</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>model.fit(X_train, y_train)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display" data-execution_count="15">
+<style>#sk-container-id-1 {color: black;}#sk-container-id-1 pre{padding: 0;}#sk-container-id-1 div.sk-toggleable {background-color: white;}#sk-container-id-1 label.sk-toggleable__label {cursor: pointer;display: block;width: 100%;margin-bottom: 0;padding: 0.3em;box-sizing: border-box;text-align: center;}#sk-container-id-1 label.sk-toggleable__label-arrow:before {content: "▸";float: left;margin-right: 0.25em;color: #696969;}#sk-container-id-1 label.sk-toggleable__label-arrow:hover:before {color: black;}#sk-container-id-1 div.sk-estimator:hover label.sk-toggleable__label-arrow:before {color: black;}#sk-container-id-1 div.sk-toggleable__content {max-height: 0;max-width: 0;overflow: hidden;text-align: left;background-color: #f0f8ff;}#sk-container-id-1 div.sk-toggleable__content pre {margin: 0.2em;color: black;border-radius: 0.25em;background-color: #f0f8ff;}#sk-container-id-1 input.sk-toggleable__control:checked~div.sk-toggleable__content {max-height: 200px;max-width: 100%;overflow: auto;}#sk-container-id-1 input.sk-toggleable__control:checked~label.sk-toggleable__label-arrow:before {content: "▾";}#sk-container-id-1 div.sk-estimator input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-label input.sk-toggleable__control:checked~label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 input.sk-hidden--visually {border: 0;clip: rect(1px 1px 1px 1px);clip: rect(1px, 1px, 1px, 1px);height: 1px;margin: -1px;overflow: hidden;padding: 0;position: absolute;width: 1px;}#sk-container-id-1 div.sk-estimator {font-family: monospace;background-color: #f0f8ff;border: 1px dotted black;border-radius: 0.25em;box-sizing: border-box;margin-bottom: 0.5em;}#sk-container-id-1 div.sk-estimator:hover {background-color: #d4ebff;}#sk-container-id-1 div.sk-parallel-item::after {content: "";width: 100%;border-bottom: 1px solid gray;flex-grow: 1;}#sk-container-id-1 div.sk-label:hover label.sk-toggleable__label {background-color: #d4ebff;}#sk-container-id-1 div.sk-serial::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: 0;}#sk-container-id-1 div.sk-serial {display: flex;flex-direction: column;align-items: center;background-color: white;padding-right: 0.2em;padding-left: 0.2em;position: relative;}#sk-container-id-1 div.sk-item {position: relative;z-index: 1;}#sk-container-id-1 div.sk-parallel {display: flex;align-items: stretch;justify-content: center;background-color: white;position: relative;}#sk-container-id-1 div.sk-item::before, #sk-container-id-1 div.sk-parallel-item::before {content: "";position: absolute;border-left: 1px solid gray;box-sizing: border-box;top: 0;bottom: 0;left: 50%;z-index: -1;}#sk-container-id-1 div.sk-parallel-item {display: flex;flex-direction: column;z-index: 1;position: relative;background-color: white;}#sk-container-id-1 div.sk-parallel-item:first-child::after {align-self: flex-end;width: 50%;}#sk-container-id-1 div.sk-parallel-item:last-child::after {align-self: flex-start;width: 50%;}#sk-container-id-1 div.sk-parallel-item:only-child::after {width: 0;}#sk-container-id-1 div.sk-dashed-wrapped {border: 1px dashed gray;margin: 0 0.4em 0.5em 0.4em;box-sizing: border-box;padding-bottom: 0.4em;background-color: white;}#sk-container-id-1 div.sk-label label {font-family: monospace;font-weight: bold;display: inline-block;line-height: 1.2em;}#sk-container-id-1 div.sk-label-container {text-align: center;}#sk-container-id-1 div.sk-container {/* jupyter's `normalize.less` sets `[hidden] { display: none; }` but bootstrap.min.css set `[hidden] { display: none !important; }` so we also need the `!important` here to be able to override the default hidden behavior on the sphinx rendered scikit-learn.org. See: https://github.com/scikit-learn/scikit-learn/issues/21755 */display: inline-block !important;position: relative;}#sk-container-id-1 div.sk-text-repr-fallback {display: none;}</style><div id="sk-container-id-1" class="sk-top-container"><div class="sk-text-repr-fallback"><pre>Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('linearsvc', LinearSVC(C=0.001, dual=False))])</pre><b>In a Jupyter environment, please rerun this cell to show the HTML representation or trust the notebook. <br>On GitHub, the HTML representation is unable to render, please try loading this page with nbviewer.org.</b></div><div class="sk-container" hidden=""><div class="sk-item sk-dashed-wrapped"><div class="sk-label-container"><div class="sk-label sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-1" type="checkbox"><label for="sk-estimator-id-1" class="sk-toggleable__label sk-toggleable__label-arrow">Pipeline</label><div class="sk-toggleable__content"><pre>Pipeline(steps=[('standardscaler', StandardScaler()),
+                ('linearsvc', LinearSVC(C=0.001, dual=False))])</pre></div></div></div><div class="sk-serial"><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-2" type="checkbox"><label for="sk-estimator-id-2" class="sk-toggleable__label sk-toggleable__label-arrow">StandardScaler</label><div class="sk-toggleable__content"><pre>StandardScaler()</pre></div></div></div><div class="sk-item"><div class="sk-estimator sk-toggleable"><input class="sk-toggleable__control sk-hidden--visually" id="sk-estimator-id-3" type="checkbox"><label for="sk-estimator-id-3" class="sk-toggleable__label sk-toggleable__label-arrow">LinearSVC</label><div class="sk-toggleable__content"><pre>LinearSVC(C=0.001, dual=False)</pre></div></div></div></div></div></div></div>
+</div>
+</div>
+<p>Now, that we’ve fit our model, we’re going to test it on the test set and then audit the model for gender bias. Recall that we didn’t include sex as one of the features in our model, so we’re interested to see if the model we trained on other features might be implicitly biased by sex.</p>
 </section>
-<section id="write-and-reflect" class="level3">
-<h3 class="anchored" data-anchor-id="write-and-reflect">Write and Reflect</h3>
+<section id="auditing-the-model" class="level3">
+<h3 class="anchored" data-anchor-id="auditing-the-model">Auditing the Model</h3>
+<div id="cell-30" class="cell" data-execution_count="16">
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>y_hat <span class="op">=</span> model.predict(X_test)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="cell-31" class="cell" data-execution_count="38">
+<div class="cell-output cell-output-stdout">
+<pre><code>Overall accuracy: 0.8</code></pre>
+</div>
+</div>
+<div id="cell-32" class="cell" data-execution_count="39">
+<div class="cell-output cell-output-stdout">
+<pre><code>Accuracy for men: 0.79</code></pre>
+</div>
+</div>
+<div id="cell-33" class="cell" data-execution_count="41">
+<div class="cell-output cell-output-stdout">
+<pre><code>Accuracy for women: 0.81</code></pre>
+</div>
+</div>
+<p>At first glance, we can see that our model is slightly more accurate for women, but it performs fairly similarly across each group when looking at accurate. But, let’s get more precise to understand more about the differences in accuracy between groups. We’ll get the accuracy using the accuracy score function, the PPV using the precision score function, and the true positive, true negative, false negative, and false positive rates from the confusion matrix. We’ll get all of these metrics for the whole test set, as well as the test set filtered for the female and male groups. We will put all of these metrics into a dictionary for easy access when we plot these results next.</p>
+<div id="cell-35" class="cell" data-execution_count="21">
+<details class="code-fold">
+<summary>Code to calculate accuracy and error rates</summary>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Make predictions</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>y_pred <span class="op">=</span> best_model.predict(X_test)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="co">### Overall Measures </span><span class="al">###</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute overall accuracy</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>overall_accuracy <span class="op">=</span> accuracy_score(y_test, y_pred)</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute overall PPV (Positive Predictive Value / Precision)</span></span>
+<span id="cb17-9"><a href="#cb17-9" aria-hidden="true" tabindex="-1"></a>overall_ppv <span class="op">=</span> precision_score(y_test, y_pred)</span>
+<span id="cb17-10"><a href="#cb17-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute overall confusion matrix</span></span>
+<span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>tn, fp, fn, tp <span class="op">=</span> confusion_matrix(y_test, y_pred).ravel()</span>
+<span id="cb17-13"><a href="#cb17-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-14"><a href="#cb17-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute overall False Positive Rate (FPR) and False Negative Rate (FNR)</span></span>
+<span id="cb17-15"><a href="#cb17-15" aria-hidden="true" tabindex="-1"></a>overall_fpr <span class="op">=</span> fp <span class="op">/</span> (fp <span class="op">+</span> tn)</span>
+<span id="cb17-16"><a href="#cb17-16" aria-hidden="true" tabindex="-1"></a>overall_fnr <span class="op">=</span> fn <span class="op">/</span> (fn <span class="op">+</span> tp)</span>
+<span id="cb17-17"><a href="#cb17-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-18"><a href="#cb17-18" aria-hidden="true" tabindex="-1"></a><span class="co"># Print overall metrics</span></span>
+<span id="cb17-19"><a href="#cb17-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Overall Model Performance ---"</span>)</span>
+<span id="cb17-20"><a href="#cb17-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Overall Accuracy: </span><span class="sc">{</span>overall_accuracy<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-21"><a href="#cb17-21" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Overall PPV: </span><span class="sc">{</span>overall_ppv<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-22"><a href="#cb17-22" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Overall False Positive Rate (FPR): </span><span class="sc">{</span>overall_fpr<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-23"><a href="#cb17-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Overall False Negative Rate (FNR): </span><span class="sc">{</span>overall_fnr<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-24"><a href="#cb17-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-25"><a href="#cb17-25" aria-hidden="true" tabindex="-1"></a><span class="co">### By-Group Measures </span><span class="al">###</span></span>
+<span id="cb17-26"><a href="#cb17-26" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Subgroup Model Performance ---"</span>)</span>
+<span id="cb17-27"><a href="#cb17-27" aria-hidden="true" tabindex="-1"></a>subgroup_results <span class="op">=</span> []</span>
+<span id="cb17-28"><a href="#cb17-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-29"><a href="#cb17-29" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> sex <span class="kw">in</span> [<span class="dv">1</span>, <span class="dv">2</span>]:  <span class="co"># 1 = Male, 2 = Female</span></span>
+<span id="cb17-30"><a href="#cb17-30" aria-hidden="true" tabindex="-1"></a>    mask <span class="op">=</span> (group_test <span class="op">==</span> sex)</span>
+<span id="cb17-31"><a href="#cb17-31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb17-32"><a href="#cb17-32" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute subgroup accuracy</span></span>
+<span id="cb17-33"><a href="#cb17-33" aria-hidden="true" tabindex="-1"></a>    subgroup_accuracy <span class="op">=</span> accuracy_score(y_test[mask], y_pred[mask])</span>
+<span id="cb17-34"><a href="#cb17-34" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb17-35"><a href="#cb17-35" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute subgroup PPV</span></span>
+<span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>    subgroup_ppv <span class="op">=</span> precision_score(y_test[mask], y_pred[mask])</span>
+<span id="cb17-37"><a href="#cb17-37" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb17-38"><a href="#cb17-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute subgroup confusion matrix</span></span>
+<span id="cb17-39"><a href="#cb17-39" aria-hidden="true" tabindex="-1"></a>    tn_s, fp_s, fn_s, tp_s <span class="op">=</span> confusion_matrix(y_test[mask], y_pred[mask]).ravel()</span>
+<span id="cb17-40"><a href="#cb17-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-41"><a href="#cb17-41" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute subgroup FPR and FNR</span></span>
+<span id="cb17-42"><a href="#cb17-42" aria-hidden="true" tabindex="-1"></a>    subgroup_fpr <span class="op">=</span> fp_s <span class="op">/</span> (fp_s <span class="op">+</span> tn_s)</span>
+<span id="cb17-43"><a href="#cb17-43" aria-hidden="true" tabindex="-1"></a>    subgroup_fnr <span class="op">=</span> fn_s <span class="op">/</span> (fn_s <span class="op">+</span> tp_s)</span>
+<span id="cb17-44"><a href="#cb17-44" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb17-45"><a href="#cb17-45" aria-hidden="true" tabindex="-1"></a>    group_name <span class="op">=</span> <span class="st">"Male"</span> <span class="cf">if</span> sex <span class="op">==</span> <span class="dv">1</span> <span class="cf">else</span> <span class="st">"Female"</span></span>
+<span id="cb17-46"><a href="#cb17-46" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Group: </span><span class="sc">{</span>group_name<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb17-47"><a href="#cb17-47" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  Accuracy: </span><span class="sc">{</span>subgroup_accuracy<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-48"><a href="#cb17-48" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  PPV: </span><span class="sc">{</span>subgroup_ppv<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-49"><a href="#cb17-49" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  False Positive Rate (FPR): </span><span class="sc">{</span>subgroup_fpr<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-50"><a href="#cb17-50" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"  False Negative Rate (FNR): </span><span class="sc">{</span>subgroup_fnr<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-51"><a href="#cb17-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-52"><a href="#cb17-52" aria-hidden="true" tabindex="-1"></a>    subgroup_results.append({</span>
+<span id="cb17-53"><a href="#cb17-53" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Sex"</span>: group_name,</span>
+<span id="cb17-54"><a href="#cb17-54" aria-hidden="true" tabindex="-1"></a>        <span class="st">"Accuracy"</span>: subgroup_accuracy,</span>
+<span id="cb17-55"><a href="#cb17-55" aria-hidden="true" tabindex="-1"></a>        <span class="st">"PPV"</span>: subgroup_ppv,</span>
+<span id="cb17-56"><a href="#cb17-56" aria-hidden="true" tabindex="-1"></a>        <span class="st">"FPR"</span>: subgroup_fpr,</span>
+<span id="cb17-57"><a href="#cb17-57" aria-hidden="true" tabindex="-1"></a>        <span class="st">"FNR"</span>: subgroup_fnr</span>
+<span id="cb17-58"><a href="#cb17-58" aria-hidden="true" tabindex="-1"></a>    })</span>
+<span id="cb17-59"><a href="#cb17-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-60"><a href="#cb17-60" aria-hidden="true" tabindex="-1"></a><span class="co">### Bias Measures </span><span class="al">###</span></span>
+<span id="cb17-61"><a href="#cb17-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Calibration: The model is considered calibrated if P(Y=1 | S=1) ≈ P(Y=1 | S=2)</span></span>
+<span id="cb17-62"><a href="#cb17-62" aria-hidden="true" tabindex="-1"></a>calibration_diff <span class="op">=</span> <span class="bu">abs</span>(y_pred[group_test <span class="op">==</span> <span class="dv">1</span>].mean() <span class="op">-</span> y_pred[group_test <span class="op">==</span> <span class="dv">2</span>].mean())</span>
+<span id="cb17-63"><a href="#cb17-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-64"><a href="#cb17-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Error Rate Balance: FNR and FPR should be similar across groups</span></span>
+<span id="cb17-65"><a href="#cb17-65" aria-hidden="true" tabindex="-1"></a>error_rate_balance <span class="op">=</span> <span class="bu">abs</span>(subgroup_results[<span class="dv">0</span>][<span class="st">"FNR"</span>] <span class="op">-</span> subgroup_results[<span class="dv">1</span>][<span class="st">"FNR"</span>]) <span class="op">+</span> <span class="op">\</span></span>
+<span id="cb17-66"><a href="#cb17-66" aria-hidden="true" tabindex="-1"></a>                     <span class="bu">abs</span>(subgroup_results[<span class="dv">0</span>][<span class="st">"FPR"</span>] <span class="op">-</span> subgroup_results[<span class="dv">1</span>][<span class="st">"FPR"</span>])</span>
+<span id="cb17-67"><a href="#cb17-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-68"><a href="#cb17-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Statistical Parity: P(Y=1 | S=1) ≈ P(Y=1 | S=2)</span></span>
+<span id="cb17-69"><a href="#cb17-69" aria-hidden="true" tabindex="-1"></a>statistical_parity_diff <span class="op">=</span> <span class="bu">abs</span>(np.mean(y_pred[group_test <span class="op">==</span> <span class="dv">1</span>]) <span class="op">-</span> np.mean(y_pred[group_test <span class="op">==</span> <span class="dv">2</span>]))</span>
+<span id="cb17-70"><a href="#cb17-70" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb17-71"><a href="#cb17-71" aria-hidden="true" tabindex="-1"></a><span class="co"># Print Bias Metrics</span></span>
+<span id="cb17-72"><a href="#cb17-72" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Bias Metrics ---"</span>)</span>
+<span id="cb17-73"><a href="#cb17-73" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Calibration Difference: </span><span class="sc">{</span>calibration_diff<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-74"><a href="#cb17-74" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Error Rate Balance: </span><span class="sc">{</span>error_rate_balance<span class="sc">:.2f}</span><span class="ss">"</span>)</span>
+<span id="cb17-75"><a href="#cb17-75" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Statistical Parity Difference: </span><span class="sc">{</span>statistical_parity_diff<span class="sc">:.2f}</span><span class="ss">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>
+--- Overall Model Performance ---
+Overall Accuracy: 0.80
+Overall PPV: 0.63
+Overall False Positive Rate (FPR): 0.08
+Overall False Negative Rate (FNR): 0.56
+
+--- Subgroup Model Performance ---
+
+Group: Male
+  Accuracy: 0.79
+  PPV: 0.75
+  False Positive Rate (FPR): 0.06
+  False Negative Rate (FNR): 0.56
+
+Group: Female
+  Accuracy: 0.81
+  PPV: 0.50
+  False Positive Rate (FPR): 0.10
+  False Negative Rate (FNR): 0.57
+
+--- Bias Metrics ---
+Calibration Difference: 0.01
+Error Rate Balance: 0.05
+Statistical Parity Difference: 0.01</code></pre>
+</div>
+</div>
+<p>These results tell us more information about the difference in model performance between the two groups. We can see that the male group has a lower false positive rate (FPR) than the female group, that is, our model is less likely to incorrectly predict that a man has income over $50,000 when he actually does not. The false negative rate (FNR) is very similar across groups, so we are pretty much equally likely to predict that a male or female does not have income over $50,000 when they actually do. The male group has a higher PPV value than the female group, which we’ll explore further in the plot below. We will reproduce a plot from the COMPAS paper that compares the FPR and FNR rates across groups and plots potential combinations of FPR/FNR rates for each group. The plot also looks at the potential combinations of FPR/FNR rates for the female group if we fix the PPV rate for the female group to the larger PPV value of the male group.</p>
+<div id="cell-37" class="cell" data-execution_count="23">
+<details class="code-fold">
+<summary>Code to reproduce plot from COMPAS paper</summary>
+<div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract values for male and female</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>p_male <span class="op">=</span> np.mean(y_test[group_test <span class="op">==</span> <span class="dv">1</span>])  <span class="co"># Prevalence of male</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>p_female <span class="op">=</span> np.mean(y_test[group_test <span class="op">==</span> <span class="dv">2</span>])  <span class="co"># Prevalence of female</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>PPV_female <span class="op">=</span> subgroup_results[<span class="dv">1</span>][<span class="st">"PPV"</span>] <span class="co"># Observed PPV for females</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>PPV_male_fixed <span class="op">=</span> PPV_female <span class="co"># Set PPV_male to PPV_female</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Extract FNR and FPR values for observed points</span></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a>fnr_values <span class="op">=</span> [subgroup_results[<span class="dv">0</span>][<span class="st">"FNR"</span>], subgroup_results[<span class="dv">1</span>][<span class="st">"FNR"</span>]]</span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>fpr_values <span class="op">=</span> [subgroup_results[<span class="dv">0</span>][<span class="st">"FPR"</span>], subgroup_results[<span class="dv">1</span>][<span class="st">"FPR"</span>]]</span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a>labels <span class="op">=</span> [subgroup_results[<span class="dv">0</span>][<span class="st">"Sex"</span>], subgroup_results[<span class="dv">1</span>][<span class="st">"Sex"</span>]]</span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Generate range of FNR values from 0 to 1</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>fnr_range <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">1</span>, <span class="dv">100</span>)</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute feasible FPR values for males</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>fpr_feasible_male <span class="op">=</span> ((<span class="dv">1</span> <span class="op">-</span> fnr_range) <span class="op">*</span> p_male <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> PPV_male_fixed)) <span class="op">/</span> (PPV_male_fixed <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> p_male))</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="co"># Compute feasible FPR values for females when PPV_female = PPV_male</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a>fpr_feasible_female <span class="op">=</span> ((<span class="dv">1</span> <span class="op">-</span> fnr_range) <span class="op">*</span> p_female <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> PPV_female)) <span class="op">/</span> (PPV_female <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> p_female))</span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Define range of delta values for shading</span></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a>delta_values <span class="op">=</span> [<span class="fl">0.05</span>, <span class="fl">0.1</span>, <span class="fl">0.15</span>]  <span class="co"># Smaller delta -&gt; smaller feasible region</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>plt.figure(figsize<span class="op">=</span>(<span class="dv">10</span>, <span class="dv">6</span>))</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Scatter plot of observed values</span></span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>sns.scatterplot(x<span class="op">=</span>fnr_values, y<span class="op">=</span>fpr_values, hue<span class="op">=</span>labels, palette<span class="op">=</span>[<span class="st">"lightblue"</span>, <span class="st">"lightpink"</span>], s<span class="op">=</span><span class="dv">100</span>)</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot feasible set for males</span></span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a>plt.plot(fnr_range, fpr_feasible_male, color<span class="op">=</span><span class="st">"lightblue"</span>, label<span class="op">=</span><span class="st">"Feasible Set (Male)"</span>)</span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a><span class="co"># Plot feasible set for females when PPV_female = PPV_male</span></span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>plt.plot(fnr_range, fpr_feasible_female, color<span class="op">=</span><span class="st">"lightpink"</span>, label<span class="op">=</span><span class="st">"Feasible Set (Female, PPV=PPV_male)"</span>)</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a><span class="co"># Add nested shaded regions for varying PPV_female constraints</span></span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> i, delta <span class="kw">in</span> <span class="bu">enumerate</span>(delta_values):</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a>    <span class="co"># PPV_female_upper = PPV_male + delta</span></span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    <span class="co"># PPV_female_lower = PPV_male - delta</span></span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a>    PPV_male_upper <span class="op">=</span> PPV_female <span class="op">+</span> delta</span>
+<span id="cb19-42"><a href="#cb19-42" aria-hidden="true" tabindex="-1"></a>    PPV_male_lower <span class="op">=</span> PPV_female <span class="op">-</span> delta</span>
+<span id="cb19-43"><a href="#cb19-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-44"><a href="#cb19-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-45"><a href="#cb19-45" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Compute feasible FPR values for upper and lower PPV bounds</span></span>
+<span id="cb19-46"><a href="#cb19-46" aria-hidden="true" tabindex="-1"></a>    fpr_feasible_upper <span class="op">=</span> ((<span class="dv">1</span> <span class="op">-</span> fnr_range) <span class="op">*</span> p_male <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> PPV_male_upper)) <span class="op">/</span> (PPV_male_upper <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> p_male))</span>
+<span id="cb19-47"><a href="#cb19-47" aria-hidden="true" tabindex="-1"></a>    fpr_feasible_lower <span class="op">=</span> ((<span class="dv">1</span> <span class="op">-</span> fnr_range) <span class="op">*</span> p_male <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> PPV_male_lower)) <span class="op">/</span> (PPV_male_lower <span class="op">*</span> (<span class="dv">1</span> <span class="op">-</span> p_male))</span>
+<span id="cb19-48"><a href="#cb19-48" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-49"><a href="#cb19-49" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Fill region between upper and lower bounds</span></span>
+<span id="cb19-50"><a href="#cb19-50" aria-hidden="true" tabindex="-1"></a>    plt.fill_between(fnr_range, fpr_feasible_lower, fpr_feasible_upper, color<span class="op">=</span><span class="st">"lightgrey"</span>, alpha<span class="op">=</span><span class="fl">0.3</span>)</span>
+<span id="cb19-51"><a href="#cb19-51" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-52"><a href="#cb19-52" aria-hidden="true" tabindex="-1"></a><span class="co"># Labels and title</span></span>
+<span id="cb19-53"><a href="#cb19-53" aria-hidden="true" tabindex="-1"></a>plt.xlabel(<span class="st">"False Negative Rate (FNR)"</span>)</span>
+<span id="cb19-54"><a href="#cb19-54" aria-hidden="true" tabindex="-1"></a>plt.ylabel(<span class="st">"False Positive Rate (FPR)"</span>)</span>
+<span id="cb19-55"><a href="#cb19-55" aria-hidden="true" tabindex="-1"></a>plt.title(<span class="st">"Feasible (FNR, FPR) combinations"</span>)</span>
+<span id="cb19-56"><a href="#cb19-56" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-57"><a href="#cb19-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Show plot</span></span>
+<span id="cb19-58"><a href="#cb19-58" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</details>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="index_files/figure-html/cell-21-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>This chart is a reproduction of the Chouldechova paper that we discussed in class. We fixed ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍the proportion of true positive labels for eac‍‍‍‍‍‍‍‍‍‍‍‍‍h group, and we set the PPV values to be equal across both groups. The pink and blue points show the observed FPR and FNR rates for the male and female groups. The lines represent the possible combinations of FPR and FNR for each group, with the PPV for the male group fixed at the lower PPV that we observed for the female group. Given this, we can see that if we wanted the male FPR to be the same as the female FPR, we would need to increase the false negative rate around 35% so that the blue point would shift right onto the blue line. This tells us that we would need to make the model for males much less accurate than it is now to make the models “equal” in their FPR.</p>
+</section>
+<section id="concluding-discussion" class="level3">
+<h3 class="anchored" data-anchor-id="concluding-discussion">Concluding Discussion</h3>
+<p>Ultimately, this model didn’t exhibit that much bias. Even though the male group had a higher PPV, the accuracy, FPRs, and FNRs were similar across the two groups. There are many people that might be interested in this model, like people doing credit risk assessment, recruiters and employers, or banks. These institutions would all have an interest in predicting how much income an individual might make. At a large scale, this model might be slightly more accurate for predicting male income. This could potentially have a negative impact on females because they might be more likely to be denied credit or a job if their income is predicted to be lower than it actually is. This could lead to biased employment practices, unfair denial of services, or housing discrimination. On the positive side, this model could have the impact of streamlining financial services and job-matching or aiding governments in economic research and policy planning with access to income data. I didn’t feel that this model displays ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍problematic ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍bias. The error rates were very similar across groups, but I could see the potential for a model like this to be biased against women, given the systemic wage gap and sexism inherent in our society. Some of the other problems ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍associated with deploying this model, like privacy issues and regulatory compliance. To mitigate these potential impacts, it would be useful to conduct bias audits at a large scale, like the one we did here. It could also be important to ensure that humans, instead of the algorithm, end up having the final say about decisions that might be impacted by the model results.</p>
 
 
 </section>
