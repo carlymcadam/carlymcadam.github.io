@@ -580,7 +580,7 @@ window.Quarto = {
 <span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> []</span>
 <span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> degree <span class="kw">in</span> degrees:</span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add polynomial features to X_base (note: for degree == 1, nothing extra is added)</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add polynomial features to X_base</span></span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    X_poly <span class="op">=</span> add_polynomial_features(X, degree)</span>
 <span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    </span>
 <span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Loop through each regularization strength</span></span>
@@ -589,11 +589,11 @@ window.Quarto = {
 <span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Create a Ridge regression model with the given alpha</span></span>
 <span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        model <span class="op">=</span> Ridge(alpha<span class="op">=</span>alpha)</span>
 <span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use cross-validation to estimate the mean squared error.</span></span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Note: cross_val_score returns negative MSE when scoring is set to "neg_mean_squared_error"</span></span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> warnings.catch_warnings():</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>            warnings.filterwarnings(<span class="st">"ignore"</span>)</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>            scores <span class="op">=</span> cross_val_score(model, X_poly, y, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">"neg_mean_squared_error"</span>)</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use cross-validation to estimate the mean squared error</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">with</span> warnings.catch_warnings():</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>            warnings.filterwarnings(<span class="st">"ignore"</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>            scores <span class="op">=</span> cross_val_score(model, X_poly, y, cv<span class="op">=</span><span class="dv">5</span>, scoring<span class="op">=</span><span class="st">"neg_mean_squared_error"</span>)</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># cross_val_score returns negative MSE when scoring is set to "neg_mean_squared_error" so we negate it for the mean</span></span>
 <span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>        mse <span class="op">=</span> <span class="op">-</span>np.mean(scores)</span>
 <span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>            </span>
 <span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Save the combination and results</span></span>
@@ -643,8 +643,8 @@ Black coefficient: -0.27</code></pre>
 <p>Based on these results, we can see that the coefficient associated with the Black individuals in the dataset is <span class="math inline">\(w_b = -0.27\)</span>. We can calculate <span class="math inline">\(e^{w_b} = e^{-0.27} = 0.76\)</span>. So, percentage of cost incurred by a Black patient in comparison to an equally sick white patient, is around 76%. This supports the argument that was made in the ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍Obermeyer paper because it suggests that less money is spent on Black patients who have the same level of need as white patients.</p>
 </section>
 </section>
-<section id="abstract-and-discussion" class="level3">
-<h3 class="anchored" data-anchor-id="abstract-and-discussion">Abstract and Discussion</h3>
+<section id="discussion" class="level3">
+<h3 class="anchored" data-anchor-id="discussion">Discussion</h3>
 <p>After replicating the study done in the Obermeyer paper, we can see that because less money is spent on Black patients’ healthcare, they are often classified as lower risk than white patients who have the same chronic conditions. This has concerning implications, as it seems like this algorithm was making it harder for Black patients to access care than white patients, even if the Black patients are sicker than the white patients.</p>
 <p>In terms of the formal ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍statistical ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍discrimination ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍criteria ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍discussed in Chapter 3 of ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍ ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍Barocas, Hardt, and Narayanan, the separation criterion best describes the bias that Obermeyer et al.&nbsp;found in their paper. This is because separation would require that the risk score be conditionally independent of race given true health need. That is, if two individuals have the same underlying health status, their risk scores should be statistically indistinguishable across racial groups. But, our results show that this isn’t true when we use this algorithm. Our results showed that Black patients with the same chronic conditions as white patients are assigned lower risk scores because the algorithm uses healthcare expenditures as a proxy for health need. Even though the algorithm may be able to predict health care costs effectively, these effective predictions are not an accurate proxy for health need, which makes the algorithm violate the separation criterion. Even though the model may be accurate, it is not necessarily unbiased.</p>
 <p>I learned a lot from replicating this study. I think I went into it with an understanding of the importance of accuracy and equality in a model, but without considering the implications of the model. Even though this model may have been accurate, the context in which it was being applied made it so that it was biased against Black individuals. Using one feature as a proxy for another feature seems tricky, and requires a lot of auditing to ensure that it doesn’t create bias.</p>
