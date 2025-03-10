@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/replication-study/index.html",
       "/posts/auditing-bias/index.html",
       "/posts/automated-decision-systems/index.html",
       "/posts/palmer-penguins/index.html",
