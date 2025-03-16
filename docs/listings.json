@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/limits-of-quanitative-approaches/index.html",
       "/posts/replication-study/index.html",
       "/posts/auditing-bias/index.html",
       "/posts/automated-decision-systems/index.html",
