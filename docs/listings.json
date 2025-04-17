@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/overfitting-overparameterization-double-descent/index.html",
       "/posts/implementing-logistic-regression/index.html",
       "/posts/limits-of-quanitative-approaches/index.html",
       "/posts/replication-study/index.html",
