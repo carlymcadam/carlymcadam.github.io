@@ -392,34 +392,37 @@ window.Quarto = {
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a>X <span class="op">=</span> X.reshape(n_samples, <span class="op">-</span><span class="dv">1</span>) <span class="co"># Reshape the image </span></span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a>X_train, X_test, y_train, y_test <span class="op">=</span> train_test_split(X, y, test_size<span class="op">=</span><span class="fl">0.5</span>, random_state<span class="op">=</span><span class="dv">42</span>) <span class="co"># Split into train and test sets</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<p>Now, we want to to assess the performance of the overparametrized model. We will vary the number of features that we use in the RandomFeatures class to find the number of features that yields the smallest mean squared error</p>
+<p>Now, we want to to assess the performance of the overparametrized model. We will use a loop to vary the number of features that we use in the RandomFeatures class to find the number of features that yields the smallest mean squared error.</p>
 <div id="cell-25" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Parameters</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>max_features <span class="op">=</span> <span class="dv">200</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>training_errors <span class="op">=</span> []</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>training_errors <span class="op">=</span> [] <span class="co"># Lists to keep track of errors</span></span>
 <span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>testing_errors <span class="op">=</span> []</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>feature_counts <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">1</span>, max_features <span class="op">+</span> <span class="dv">1</span>))</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>feature_counts <span class="op">=</span> <span class="bu">list</span>(<span class="bu">range</span>(<span class="dv">1</span>, max_features <span class="op">+</span> <span class="dv">1</span>)) <span class="co"># Test 1-200 features</span></span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Loop through different numbers of features and get error</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> n_features <span class="kw">in</span> feature_counts:</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    phi <span class="op">=</span> RandomFeatures(n_features<span class="op">=</span>n_features, activation<span class="op">=</span><span class="kw">lambda</span> x: x<span class="op">**</span><span class="dv">2</span>)</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    phi.fit(X_train)</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    </span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    X_train_phi <span class="op">=</span> phi.transform(X_train)</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    X_test_phi <span class="op">=</span> phi.transform(X_test)</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    model <span class="op">=</span> MyLinearRegression()</span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    optimizer <span class="op">=</span> OverParameterizedLinearRegressionOptimizer(model)</span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    optimizer.fit(X_train_phi, y_train)</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    y_train_pred <span class="op">=</span> model.predict(X_train_phi)</span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    y_test_pred <span class="op">=</span> model.predict(X_test_phi)</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    training_mse <span class="op">=</span> mean_squared_error(y_train.numpy(), y_train_pred.detach().numpy())</span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>    testing_mse <span class="op">=</span> mean_squared_error(y_test.numpy(), y_test_pred.detach().numpy())</span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    training_errors.append(training_mse)</span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    testing_errors.append(testing_mse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> n_features <span class="kw">in</span> feature_counts:</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Generate ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍features ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍from ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍a ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍data ‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍‍matrix</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>    phi <span class="op">=</span> RandomFeatures(n_features<span class="op">=</span>n_features, activation<span class="op">=</span><span class="kw">lambda</span> x: x<span class="op">**</span><span class="dv">2</span>) <span class="co"># Make the random feature map with square activation function</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>    phi.fit(X_train) </span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>    X_train_phi <span class="op">=</span> phi.transform(X_train)</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a>    X_test_phi <span class="op">=</span> phi.transform(X_test)</span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>    model <span class="op">=</span> MyLinearRegression() <span class="co"># Initialize the model</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>    optimizer <span class="op">=</span> OverParameterizedLinearRegressionOptimizer(model)</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>    optimizer.fit(X_train_phi, y_train) <span class="co"># Fit to the training set with the random features from above</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>    y_train_pred <span class="op">=</span> model.predict(X_train_phi) <span class="co"># Make predictions for train set</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>    y_test_pred <span class="op">=</span> model.predict(X_test_phi) <span class="co"># Make predictions for test set</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>    training_mse <span class="op">=</span> mean_squared_error(y_train.numpy(), y_train_pred.detach().numpy()) <span class="co"># Get MSE for train set</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    testing_mse <span class="op">=</span> mean_squared_error(y_test.numpy(), y_test_pred.detach().numpy()) <span class="co"># Get MSE for test set</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add errors to list for plotting </span></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>    training_errors.append(training_mse)</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>    testing_errors.append(testing_mse)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <div id="cell-26" class="cell" data-execution_count="12">
 <details class="code-fold">
