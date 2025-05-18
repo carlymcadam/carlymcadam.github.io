@@ -2,16 +2,14 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/final-project/index.html",
       "/posts/overfitting-overparameterization-double-descent/index.html",
       "/posts/implementing-logistic-regression/index.html",
       "/posts/limits-of-quanitative-approaches/index.html",
       "/posts/replication-study/index.html",
       "/posts/auditing-bias/index.html",
       "/posts/automated-decision-systems/index.html",
-      "/posts/palmer-penguins/index.html",
-      "/posts/new-test-post/index.html",
-      "/posts/new-new-test-post/index.html",
-      "/posts/example-blog-post/index.html"
+      "/posts/palmer-penguins/index.html"
     ]
   }
 ]
